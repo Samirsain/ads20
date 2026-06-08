@@ -109,7 +109,7 @@ export default function Hero({ onStart }: HeroProps) {
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 mb-2">
               <DollarSign className="h-5 w-5" />
             </div>
-            <span className="text-2xl font-normal text-zinc-950 sm:text-3xl">₹8.4M+</span>
+            <span className="text-2xl font-normal text-zinc-900 sm:text-3xl">$100K+</span>
             <span className="text-xs font-normal text-zinc-400 uppercase tracking-wider mt-1">Total Payouts Paid</span>
           </div>
         </motion.div>

@@ -181,7 +181,7 @@ export default function DashboardView({ publisherName, onLogout }: DashboardView
       if (Math.random() < 0.15) {
         conversionOccurred = true;
         const conversionsCount = Math.floor(Math.random() * 2) + 1;
-        // Average payout per conversion: ₹35 to ₹85
+        // Average payout per conversion: $35 to $85
         revenueAmount = conversionsCount * (Math.floor(Math.random() * 50) + 35);
         
         setTotalConversions((prev) => prev + conversionsCount);
@@ -194,7 +194,7 @@ export default function DashboardView({ publisherName, onLogout }: DashboardView
 
         // Show conversion alert
         const id = toastIdRef.current++;
-        const msg = `Conversion: ${updatedLinks[randomLinkIdx].name} got +${conversionsCount} leads (Earned ₹${revenueAmount})`;
+        const msg = `Conversion: ${updatedLinks[randomLinkIdx].name} got +${conversionsCount} leads (Earned $${revenueAmount})`;
         setToasts((prev) => [...prev.slice(-3), { id, message: msg, type: "conversion" }]);
       } else {
         // Show click alert
@@ -290,7 +290,7 @@ export default function DashboardView({ publisherName, onLogout }: DashboardView
     setLinks(updated);
 
     const id = toastIdRef.current++;
-    setToasts((prev) => [...prev.slice(-3), { id, message: `Conversion Boost: Generated 1 lead for ${updated[randomIdx].name} (₹${rev})`, type: "conversion" }]);
+    setToasts((prev) => [...prev.slice(-3), { id, message: `Conversion Boost: Generated 1 lead for ${updated[randomIdx].name} ($${rev})`, type: "conversion" }]);
   };
 
   // Calculations for computed ratios
@@ -311,7 +311,7 @@ export default function DashboardView({ publisherName, onLogout }: DashboardView
       const query = userMsg.toLowerCase();
       
       if (query.includes("payout") || query.includes("payment") || query.includes("money") || query.includes("paisa")) {
-        reply = "Ads2Pub par payouts har Monday subah automatically process hote hain. Payout threshold ₹500 hai. Aap Payouts tab me jaakar details verify kar sakte hain.";
+        reply = "Ads2Pub par payouts har Monday subah automatically process hote hain. Payout threshold $10 hai. Aap Payouts tab me jaakar details verify kar sakte hain.";
       } else if (query.includes("link") || query.includes("campaign")) {
         reply = "Aap 'Link Builder' tab me custom redirect links generate kar sakte hain. WhatsApp, Telegram aur Facebook lists traffic ke liye high-converting landing route defaults choose hote hain.";
       } else if (query.includes("traffic") || query.includes("click") || query.includes("fake")) {
@@ -448,7 +448,7 @@ export default function DashboardView({ publisherName, onLogout }: DashboardView
                 <div className="absolute -top-12 -right-12 h-24 w-24 rounded-full bg-emerald-500/5 blur-xl pointer-events-none" />
                 <span className="text-xs font-normal text-zinc-400 uppercase tracking-widest block">Available Balance</span>
                 <span className="text-3xl font-normal text-zinc-900 block mt-2">
-                  ₹{balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  ${balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
                 <span className="text-[10px] text-emerald-600 flex items-center gap-1 mt-2.5 font-normal">
                   <CheckCircle className="h-3 w-3" />
@@ -460,7 +460,7 @@ export default function DashboardView({ publisherName, onLogout }: DashboardView
                 <div className="absolute -top-12 -right-12 h-24 w-24 rounded-full bg-blue-500/5 blur-xl pointer-events-none" />
                 <span className="text-xs font-normal text-zinc-400 uppercase tracking-widest block">Pending Earnings</span>
                 <span className="text-3xl font-normal text-zinc-900 block mt-2">
-                  ₹{pending.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  ${pending.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
                 <span className="text-[10px] text-zinc-500 flex items-center gap-1 mt-2.5 font-normal">
                   <Clock className="h-3 w-3" />
@@ -486,8 +486,8 @@ export default function DashboardView({ publisherName, onLogout }: DashboardView
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {[
                 { label: "Total Clicks", val: totalClicks, icon: MousePointerClick, color: "text-blue-600 bg-blue-50" },
-                { label: "Total Revenue", val: `₹${totalRevenue.toFixed(0)}`, icon: DollarSign, color: "text-emerald-700 bg-emerald-50" },
-                { label: "Average EPC", val: `₹${epc}`, icon: TrendingUp, color: "text-purple-700 bg-purple-50" },
+                { label: "Total Revenue", val: `$${totalRevenue.toFixed(0)}`, icon: DollarSign, color: "text-emerald-700 bg-emerald-50" },
+                { label: "Average EPC", val: `$${epc}`, icon: TrendingUp, color: "text-purple-700 bg-purple-50" },
                 { label: "CTR Ratio", val: `${ctr}%`, icon: ShieldCheck, color: "text-amber-700 bg-amber-50" },
               ].map((stat, idx) => {
                 const Icon = stat.icon;
@@ -683,7 +683,7 @@ export default function DashboardView({ publisherName, onLogout }: DashboardView
                       </div>
                       <div>
                         <span className="text-[9px] text-zinc-400 font-normal block uppercase">Revenue</span>
-                        <span className="text-xs font-normal text-zinc-900">₹{link.revenue.toFixed(0)}</span>
+                        <span className="text-xs font-normal text-zinc-900">${link.revenue.toFixed(0)}</span>
                       </div>
                     </div>
                   </div>
@@ -791,10 +791,10 @@ export default function DashboardView({ publisherName, onLogout }: DashboardView
                   >
                     <div className="flex items-center gap-3">
                       <div className="h-8 w-8 rounded-lg bg-white border border-zinc-200 flex items-center justify-center text-xs font-normal text-emerald-600">
-                        ₹
+                        $
                       </div>
                       <div>
-                        <h4 className="text-xs font-normal text-zinc-900">₹{historyItem.amount.toFixed(2)}</h4>
+                        <h4 className="text-xs font-normal text-zinc-900">${historyItem.amount.toFixed(2)}</h4>
                         <p className="text-[9px] text-zinc-400 font-normal mt-0.5">Paid via {historyItem.method} on {historyItem.date}</p>
                       </div>
                     </div>
@@ -817,7 +817,7 @@ export default function DashboardView({ publisherName, onLogout }: DashboardView
               <h3 className="text-base font-normal text-zinc-900 mb-4">Quick Publisher FAQ</h3>
               <div className="space-y-4">
                 {[
-                  { q: "Minimum threshold balance?", a: "Minimum withdrawal balance threshold is ₹500. Lower balances remain saved inside account until cleared." },
+                  { q: "Minimum threshold balance?", a: "Minimum withdrawal balance threshold is $10. Lower balances remain saved inside account until cleared." },
                   { q: "What is CTR & EPC metric?", a: "CTR represents Click-through-rate percentage of click counts. EPC represents average earnings generated from a single visitor redirect." },
                   { q: "Approved traffic lists details?", a: "Traffic lists such as WhatsApp statuses, Telegram groups, Facebook wall posts, and organic media views are auto-approved." },
                 ].map((faq, i) => (

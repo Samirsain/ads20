@@ -61,7 +61,7 @@ export default function EarningCalculator() {
                     className={`flex items-center gap-2.5 rounded-xl p-3 text-sm font-normal transition-all border text-left ${
                       platform === key
                         ? "border-blue-600 bg-blue-50 text-blue-600 shadow-sm"
-                        : "border-zinc-200 bg-zinc-50 text-zinc-650 hover:bg-zinc-100 hover:text-zinc-900"
+                        : "border-zinc-200 bg-zinc-50 text-zinc-655 hover:bg-zinc-100 hover:text-zinc-900"
                     }`}
                   >
                     {details.iconPath ? (
@@ -119,7 +119,7 @@ export default function EarningCalculator() {
                   </span>
                 </span>
                 <span className="text-sm font-normal text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg">
-                  ₹{epc.toFixed(2)}
+                  ${epc.toFixed(2)}
                 </span>
               </div>
               <input
@@ -132,9 +132,9 @@ export default function EarningCalculator() {
                 className="w-full h-2 bg-zinc-100 rounded-lg appearance-none cursor-pointer accent-emerald-600 focus:outline-none"
               />
               <div className="flex justify-between text-[10px] font-normal text-zinc-400 mt-2">
-                <span>₹0.50</span>
-                <span>₹5.00</span>
-                <span>₹10.00 EPC</span>
+                <span>$0.50</span>
+                <span>$5.00</span>
+                <span>$10.00 EPC</span>
               </div>
             </div>
 
@@ -158,7 +158,7 @@ export default function EarningCalculator() {
                     <span className="text-xs font-normal uppercase tracking-wider">Daily Income</span>
                   </div>
                   <div className="text-right">
-                    <span className="text-lg font-normal text-zinc-900">₹{dailyEarnings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    <span className="text-lg font-normal text-zinc-900">${dailyEarnings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
                 </div>
 
@@ -168,7 +168,7 @@ export default function EarningCalculator() {
                     <span className="text-xs font-normal uppercase tracking-wider">Weekly Payout</span>
                   </div>
                   <div className="text-right">
-                    <span className="text-2xl font-normal text-emerald-600">₹{weeklyEarnings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    <span className="text-2xl font-normal text-emerald-600">${weeklyEarnings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
                 </div>
 
@@ -178,7 +178,7 @@ export default function EarningCalculator() {
                     <span className="text-xs font-normal uppercase tracking-wider">Monthly Earnings</span>
                   </div>
                   <div className="text-right">
-                    <span className="text-lg font-normal text-zinc-900">₹{monthlyEarnings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    <span className="text-lg font-normal text-zinc-900">${monthlyEarnings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
                 </div>
               </div>
@@ -188,7 +188,7 @@ export default function EarningCalculator() {
             <div className="mt-8 pt-4 border-t border-zinc-200 flex gap-2 items-start text-xs text-zinc-500">
               <CreditCard className="h-4 w-4 shrink-0 text-blue-600 mt-0.5" />
               <span className="leading-normal">
-                Weekly payouts are processed automatically every Monday. Minimum withdrawal: ₹500.
+                Weekly payouts are processed automatically every Monday. Minimum withdrawal: $10.
               </span>
             </div>
 

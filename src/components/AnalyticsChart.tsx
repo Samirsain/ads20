@@ -120,7 +120,7 @@ export default function AnalyticsChart({ data, type }: AnalyticsChartProps) {
                   textAnchor="end"
                   className="font-mono font-normal"
                 >
-                  {type === "revenue" ? `₹${labelValue}` : labelValue}
+                  {type === "revenue" ? `$${labelValue}` : labelValue}
                 </text>
               </g>
             );
