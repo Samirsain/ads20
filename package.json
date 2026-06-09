@@ -7,6 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "db:reset": "tsx ./prisma/reset.ts",
+    "db:seed": "tsx ./prisma/seed.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {
