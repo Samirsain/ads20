@@ -59,7 +59,7 @@ export default function Footer() {
         {/* Bottom copyright row */}
         <div className="pt-8 border-t border-zinc-200/60 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
           <span className="text-[11px] text-zinc-500 font-normal">
-            &copy; {new Date().getFullYear()} Ads2Pub Corporation. All rights reserved. Built for Samir Kumar Portfolio.
+            &copy; {new Date().getFullYear()} Ads2Pub. All rights reserved.
           </span>
           <span className="text-[10px] text-zinc-400 font-normal">
             Strict Anti-Fraud systems active. Instant bans for click bots or traffic automation.
