@@ -1,20 +1,25 @@
 import { PrismaClient } from '@prisma/client'
+import { PrismaPg } from '@prisma/adapter-pg'
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
 }
 
-let prismaInstance: PrismaClient;
-try {
-  prismaInstance = globalForPrisma.prisma ?? new PrismaClient({
-    log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
-  });
-} catch (error) {
-  console.warn("Prisma initialization failed (often happens during build time on Vercel):", error);
-  // @ts-ignore - Create a dummy object to prevent build crash
-  prismaInstance = {};
+function createPrismaClient() {
+  try {
+    const adapter = new PrismaPg({
+      connectionString: process.env.DATABASE_URL!,
+    })
+    return new PrismaClient({
+      adapter,
+      log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
+    })
+  } catch (error) {
+    console.warn('Prisma initialization failed:', error)
+    return {} as PrismaClient
+  }
 }
 
-export const prisma = prismaInstance;
+export const prisma = globalForPrisma.prisma ?? createPrismaClient()
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
