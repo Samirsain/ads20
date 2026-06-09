@@ -19,12 +19,27 @@ export default function PublisherLoginPage() {
     setError('')
 
     try {
-      const res = await fetch('/api/auth/publisher/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      })
-      const data = await res.json()
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), 15000)
+
+      let res: Response
+      try {
+        res = await fetch('/api/auth/publisher/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+          signal: controller.signal,
+        })
+      } finally {
+        clearTimeout(timeout)
+      }
+
+      let data: any = {}
+      try {
+        data = await res.json()
+      } catch {
+        throw new Error('Server error — please try again')
+      }
 
       if (!res.ok || !data.success) {
         throw new Error(data.error || 'Invalid credentials')
@@ -32,7 +47,11 @@ export default function PublisherLoginPage() {
 
       router.push('/publisher/dashboard')
     } catch (err: any) {
-      setError(err.message || 'Something went wrong')
+      if (err.name === 'AbortError') {
+        setError('Request timed out — please try again')
+      } else {
+        setError(err.message || 'Something went wrong')
+      }
     } finally {
       setLoading(false)
     }
