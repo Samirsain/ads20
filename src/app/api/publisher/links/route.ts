@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+    const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000').replace(/\/+$/, '')
 
     const data = links.map((link) => {
       const conversionsCount = link.conversions.length
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
     const targetUrl = config?.value ?? 'https://paisawin.online/register'
 
     const uniqueCode = nanoid(10)
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+    const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000').replace(/\/+$/, '')
 
     const link = await prisma.trackingLink.create({
       data: {

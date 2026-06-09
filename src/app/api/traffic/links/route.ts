@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+    const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000').replace(/\/+$/, '')
 
     const data = links.map((link) => {
       const earned = link.earnings.reduce((sum, e) => sum + Number(e.amount), 0)
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
 
     const { targetUrl } = result.data
     const uniqueCode = nanoid(10)
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+    const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000').replace(/\/+$/, '')
 
     const link = await prisma.trafficLink.create({
       data: {
