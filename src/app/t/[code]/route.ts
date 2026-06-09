@@ -49,10 +49,14 @@ export async function GET(
       }),
     ]).catch((err) => console.error('[tracking click error]', err))
 
+    // Append ?ref=code to target URL so frontend can read it (HttpOnly cookie not accessible cross-domain)
+    const targetUrl = new URL(link.targetUrl)
+    targetUrl.searchParams.set('ref', code)
+
     return new Response(null, {
       status: 302,
       headers: {
-        Location: link.targetUrl,
+        Location: targetUrl.toString(),
         'Set-Cookie': `ref_code=${code}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${60 * 60 * 24 * 7}`,
       },
     })
