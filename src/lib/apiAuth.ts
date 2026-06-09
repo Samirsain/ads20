@@ -4,7 +4,7 @@ import type { NextRequest } from 'next/server'
 export function getPublisherFromRequest(request: NextRequest) {
   const authHeader = request.headers.get('authorization')
   const token =
-    extractBearerToken(authHeader) ?? request.cookies.get('publisher_token')?.value ?? null
+    extractBearerToken(authHeader) ?? request.cookies.get('pub_token')?.value ?? null
 
   if (!token) return null
   try {
