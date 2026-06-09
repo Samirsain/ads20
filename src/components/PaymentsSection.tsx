@@ -133,7 +133,7 @@ export default function PaymentsSection() {
             </div>
 
             <div className="mt-6 pt-4 border-t border-zinc-200 text-center">
-              <span className="text-[11px] text-zinc-400 font-normal block">Minimum threshold limit starts at $10 only!</span>
+              <span className="text-[11px] text-zinc-400 font-normal block">Minimum threshold limit starts at ₹1,000 only!</span>
             </div>
 
           </div>

@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   TrendingUp,
-  DollarSign,
+  IndianRupee,
   MousePointerClick,
   CheckCircle,
   Clock,
@@ -17,24 +17,33 @@ import {
   CreditCard,
   Send,
   HelpCircle,
-  ShieldCheck
+  ShieldCheck,
+  Settings,
+  Sparkles,
+  ExternalLink,
+  Plus,
+  Trash2,
+  Cpu
 } from "lucide-react";
 import AnalyticsChart from "./AnalyticsChart";
+import { 
+  getCampaigns, 
+  saveCampaigns, 
+  getLinks, 
+  saveLinks, 
+  getStats, 
+  saveStats, 
+  getPayouts, 
+  savePayouts, 
+  Campaign, 
+  TrackingLink, 
+  PayoutHistory,
+  DashboardStats 
+} from "@/lib/storage";
 
 interface DashboardViewProps {
   publisherName: string;
   onLogout: () => void;
-}
-
-interface TrackingLink {
-  id: string;
-  name: string;
-  source: string;
-  clicks: number;
-  conversions: number;
-  revenue: number;
-  url: string;
-  date: string;
 }
 
 interface ToastNotification {
@@ -43,43 +52,11 @@ interface ToastNotification {
   type: "click" | "conversion";
 }
 
-const DEFAULT_LINKS: TrackingLink[] = [
-  {
-    id: "lnk-102",
-    name: "Telegram Crypto Campaign",
-    source: "telegram",
-    clicks: 450,
-    conversions: 28,
-    revenue: 1120,
-    url: "https://a2p.cc/tg-crypto-samir",
-    date: "2026-06-05",
-  },
-  {
-    id: "lnk-103",
-    name: "WhatsApp Status Offer",
-    source: "whatsapp",
-    clicks: 280,
-    conversions: 18,
-    revenue: 720,
-    url: "https://a2p.cc/wa-status-samir",
-    date: "2026-06-06",
-  },
-  {
-    id: "lnk-104",
-    name: "Facebook Reel Promo",
-    source: "facebook",
-    clicks: 110,
-    conversions: 6,
-    revenue: 180,
-    url: "https://a2p.cc/fb-reel-samir",
-    date: "2026-06-07",
-  },
-];
-
 export default function DashboardView({ publisherName, onLogout }: DashboardViewProps) {
-  const [activeTab, setActiveTab] = useState<"overview" | "links" | "payouts" | "support">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "links" | "payouts" | "admin" | "support">("overview");
   
   // Real-time Dashboard Metrics
+  const [isLoaded, setIsLoaded] = useState(false);
   const [balance, setBalance] = useState(2450.0);
   const [pending, setPending] = useState(890.0);
   const [totalClicks, setTotalClicks] = useState(840);
@@ -97,14 +74,21 @@ export default function DashboardView({ publisherName, onLogout }: DashboardView
     { label: "15:00", clicks: 212, revenue: 400 },
   ]);
 
-  // Links state
-  const [links, setLinks] = useState<TrackingLink[]>(DEFAULT_LINKS);
+  // Links & Campaigns states from LocalStorage
+  const [links, setLinks] = useState<TrackingLink[]>([]);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   
   // Link Creator Inputs
   const [campaignName, setCampaignName] = useState("");
+  const [selectedCampaignId, setSelectedCampaignId] = useState("");
   const [trafficSource, setTrafficSource] = useState("telegram");
-  const [redirectUrl, setRedirectUrl] = useState("https://offer.ads2pub.com/cpa-smart-route");
   
+  // Admin Campaign Creator Inputs
+  const [adminCampaignName, setAdminCampaignName] = useState("");
+  const [adminTargetUrl, setAdminTargetUrl] = useState("");
+  const [adminPayout, setAdminPayout] = useState(300.0);
+  const [adminDescription, setAdminDescription] = useState("");
+
   // Simulation Controls
   const [isSimulating, setIsSimulating] = useState(false);
   const [simulationSpeed, setSimulationSpeed] = useState(2500); // ms
@@ -118,10 +102,7 @@ export default function DashboardView({ publisherName, onLogout }: DashboardView
   const [payoutMethod, setPayoutMethod] = useState("usdt");
   const [payoutAddress, setPayoutAddress] = useState("");
   const [isAddressSaved, setIsAddressSaved] = useState(false);
-  const [payoutHistory, setPayoutHistory] = useState([
-    { date: "2026-06-01", amount: 1820.0, method: "USDT (TRC20)", status: "Completed" },
-    { date: "2026-05-25", amount: 1540.0, method: "Binance Pay", status: "Completed" },
-  ]);
+  const [payoutHistory, setPayoutHistory] = useState<PayoutHistory[]>([]);
 
   // Help Desk state
   const [chatMessages, setChatMessages] = useState<{ sender: "user" | "bot"; text: string }[]>([
@@ -131,6 +112,43 @@ export default function DashboardView({ publisherName, onLogout }: DashboardView
 
   // Copy success notification
   const [copySuccess, setCopySuccess] = useState<string | null>(null);
+
+  // Load data from LocalStorage
+  const loadData = () => {
+    const stats = getStats();
+    setBalance(stats.balance);
+    setPending(stats.pending);
+    setTotalClicks(stats.totalClicks);
+    setTotalConversions(stats.totalConversions);
+    setTotalRevenue(stats.totalRevenue);
+
+    const activeCampaigns = getCampaigns();
+    setCampaigns(activeCampaigns);
+
+    const activeLinks = getLinks();
+    setLinks(activeLinks);
+
+    setPayoutHistory(getPayouts());
+  };
+
+  useEffect(() => {
+    loadData();
+    setIsLoaded(true);
+
+    const handleStorageChange = () => {
+      loadData();
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, []);
+
+  // Set default selectedCampaignId when campaigns load
+  useEffect(() => {
+    if (campaigns.length > 0 && !selectedCampaignId) {
+      setSelectedCampaignId(campaigns[0].id);
+    }
+  }, [campaigns, selectedCampaignId]);
 
   // Countdown effect
   useEffect(() => {
@@ -163,16 +181,23 @@ export default function DashboardView({ publisherName, onLogout }: DashboardView
     if (!isSimulating) return;
 
     const interval = setInterval(() => {
-      // Simulate click events
+      const linksData = getLinks();
+      if (linksData.length === 0) return;
+
       const addedClicks = Math.floor(Math.random() * 8) + 1;
-      
-      // Update general metrics
-      setTotalClicks((prev) => prev + addedClicks);
-      
-      // Select a random active link to assign these clicks to
-      const randomLinkIdx = Math.floor(Math.random() * links.length);
-      const updatedLinks = [...links];
-      updatedLinks[randomLinkIdx].clicks += addedClicks;
+      const randomLinkIdx = Math.floor(Math.random() * linksData.length);
+      const targetLink = linksData[randomLinkIdx];
+
+      targetLink.clicks += addedClicks;
+
+      const stats = getStats();
+      stats.totalClicks += addedClicks;
+
+      const campaignList = getCampaigns();
+      const campIdx = campaignList.findIndex(c => c.id === targetLink.campaignId);
+      if (campIdx !== -1) {
+        campaignList[campIdx].clicks += addedClicks;
+      }
 
       let conversionOccurred = false;
       let revenueAmount = 0;
@@ -181,29 +206,48 @@ export default function DashboardView({ publisherName, onLogout }: DashboardView
       if (Math.random() < 0.15) {
         conversionOccurred = true;
         const conversionsCount = Math.floor(Math.random() * 2) + 1;
-        // Average payout per conversion: $35 to $85
-        revenueAmount = conversionsCount * (Math.floor(Math.random() * 50) + 35);
-        
-        setTotalConversions((prev) => prev + conversionsCount);
-        setTotalRevenue((prev) => prev + revenueAmount);
-        setBalance((prev) => prev + revenueAmount);
-        setPending((prev) => prev + revenueAmount * 0.35); // 35% buffer goes to pending audit
+        const payout = campIdx !== -1 ? campaignList[campIdx].payout : 40.0;
+        revenueAmount = conversionsCount * payout;
 
-        updatedLinks[randomLinkIdx].conversions += conversionsCount;
-        updatedLinks[randomLinkIdx].revenue += revenueAmount;
+        targetLink.conversions += conversionsCount;
+        targetLink.revenue += revenueAmount;
+
+        stats.totalConversions += conversionsCount;
+        stats.totalRevenue += revenueAmount;
+        stats.balance += revenueAmount;
+        stats.pending += revenueAmount * 0.35;
+
+        if (campIdx !== -1) {
+          campaignList[campIdx].conversions += conversionsCount;
+          campaignList[campIdx].revenue += revenueAmount;
+        }
 
         // Show conversion alert
         const id = toastIdRef.current++;
-        const msg = `Conversion: ${updatedLinks[randomLinkIdx].name} got +${conversionsCount} leads (Earned $${revenueAmount})`;
+        const msg = `Lead Verified: ${targetLink.name} got +${conversionsCount} signups (Earned ₹${revenueAmount})`;
         setToasts((prev) => [...prev.slice(-3), { id, message: msg, type: "conversion" }]);
       } else {
         // Show click alert
         const id = toastIdRef.current++;
-        const msg = `Traffic: ${addedClicks} clicks routed from ${updatedLinks[randomLinkIdx].source.toUpperCase()}`;
+        const msg = `Traffic: ${addedClicks} clicks routed from ${targetLink.source.toUpperCase()}`;
         setToasts((prev) => [...prev.slice(-3), { id, message: msg, type: "click" }]);
       }
 
-      setLinks(updatedLinks);
+      saveLinks(linksData);
+      saveStats(stats);
+      saveCampaigns(campaignList);
+
+      // Refresh states locally
+      setLinks(linksData);
+      setCampaigns(campaignList);
+      setTotalClicks(stats.totalClicks);
+      setTotalConversions(stats.totalConversions);
+      setTotalRevenue(stats.totalRevenue);
+      setBalance(stats.balance);
+      setPending(stats.pending);
+
+      // Trigger custom storage event for sync
+      window.dispatchEvent(new Event("storage"));
 
       // Append to the last node of chart data or shift
       setChartData((prev) => {
@@ -231,28 +275,37 @@ export default function DashboardView({ publisherName, onLogout }: DashboardView
   // Handle Link Generation
   const handleCreateLink = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!campaignName) return;
+    if (!campaignName || !selectedCampaignId) return;
+
+    const campaign = campaigns.find(c => c.id === selectedCampaignId);
+    if (!campaign) return;
 
     const shortId = Math.random().toString(36).substring(2, 7);
-    const generatedUrl = `https://a2p.cc/${trafficSource}-${shortId}`;
+    const shortCode = `${trafficSource}-${shortId}`;
+    const generatedUrl = `${window.location.origin}/go/${shortCode}`;
 
     const newLink: TrackingLink = {
       id: `lnk-${Math.floor(Math.random() * 900) + 100}`,
+      campaignId: selectedCampaignId,
       name: campaignName,
       source: trafficSource,
       clicks: 0,
       conversions: 0,
       revenue: 0,
       url: generatedUrl,
+      shortCode: shortCode,
       date: new Date().toISOString().split("T")[0],
     };
 
-    setLinks([newLink, ...links]);
+    const updatedLinks = [newLink, ...links];
+    setLinks(updatedLinks);
+    saveLinks(updatedLinks);
     setCampaignName("");
 
     // Notify user
     const id = toastIdRef.current++;
     setToasts((prev) => [...prev, { id, message: `Created new smart campaign link for ${trafficSource.toUpperCase()}`, type: "click" }]);
+    window.dispatchEvent(new Event("storage"));
   };
 
   // Helper to copy link text
@@ -264,38 +317,119 @@ export default function DashboardView({ publisherName, onLogout }: DashboardView
 
   // Send test click instantly
   const handleForceClick = () => {
+    const linksData = getLinks();
+    if (linksData.length === 0) return;
+
     const addedClicks = 10;
-    setTotalClicks((prev) => prev + addedClicks);
-    
-    const randomIdx = Math.floor(Math.random() * links.length);
-    const updated = [...links];
-    updated[randomIdx].clicks += addedClicks;
-    setLinks(updated);
+    const randomIdx = Math.floor(Math.random() * linksData.length);
+    const targetLink = linksData[randomIdx];
+
+    targetLink.clicks += addedClicks;
+
+    const stats = getStats();
+    stats.totalClicks += addedClicks;
+
+    const campaignList = getCampaigns();
+    const campIdx = campaignList.findIndex(c => c.id === targetLink.campaignId);
+    if (campIdx !== -1) {
+      campaignList[campIdx].clicks += addedClicks;
+    }
+
+    saveLinks(linksData);
+    saveStats(stats);
+    saveCampaigns(campaignList);
+    loadData();
 
     const id = toastIdRef.current++;
-    setToasts((prev) => [...prev.slice(-3), { id, message: `Simulated 10 fast clicks from ${updated[randomIdx].source.toUpperCase()}`, type: "click" }]);
+    setToasts((prev) => [...prev.slice(-3), { id, message: `Simulated 10 fast clicks from ${targetLink.source.toUpperCase()}`, type: "click" }]);
+    window.dispatchEvent(new Event("storage"));
   };
 
   // Send test conversion instantly
   const handleForceConversion = () => {
-    const rev = Math.floor(Math.random() * 40) + 40;
-    setTotalConversions((prev) => prev + 1);
-    setTotalRevenue((prev) => prev + rev);
-    setBalance((prev) => prev + rev);
+    const linksData = getLinks();
+    if (linksData.length === 0) return;
 
-    const randomIdx = Math.floor(Math.random() * links.length);
-    const updated = [...links];
-    updated[randomIdx].conversions += 1;
-    updated[randomIdx].revenue += rev;
-    setLinks(updated);
+    const randomIdx = Math.floor(Math.random() * linksData.length);
+    const targetLink = linksData[randomIdx];
+
+    const campaignList = getCampaigns();
+    const campIdx = campaignList.findIndex(c => c.id === targetLink.campaignId);
+    const payout = campIdx !== -1 ? campaignList[campIdx].payout : 300.0;
+
+    targetLink.conversions += 1;
+    targetLink.revenue += payout;
+
+    const stats = getStats();
+    stats.totalConversions += 1;
+    stats.totalRevenue += payout;
+    stats.balance += payout;
+
+    if (campIdx !== -1) {
+      campaignList[campIdx].conversions += 1;
+      campaignList[campIdx].revenue += payout;
+    }
+
+    saveLinks(linksData);
+    saveStats(stats);
+    saveCampaigns(campaignList);
+    loadData();
 
     const id = toastIdRef.current++;
-    setToasts((prev) => [...prev.slice(-3), { id, message: `Conversion Boost: Generated 1 lead for ${updated[randomIdx].name} ($${rev})`, type: "conversion" }]);
+    setToasts((prev) => [...prev.slice(-3), { id, message: `Conversion Boost: Generated 1 lead for ${targetLink.name} (₹${payout})`, type: "conversion" }]);
+    window.dispatchEvent(new Event("storage"));
+  };
+
+  // Handle Admin Campaign Creation
+  const handleCreateCampaign = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!adminCampaignName || !adminTargetUrl) return;
+
+    const newCampaign: Campaign = {
+      id: `camp-${Math.floor(Math.random() * 900) + 100}`,
+      name: adminCampaignName,
+      targetUrl: adminTargetUrl,
+      payout: Number(adminPayout),
+      description: adminDescription || "Complete registration on target link.",
+      clicks: 0,
+      conversions: 0,
+      revenue: 0,
+      createdAt: new Date().toISOString().split("T")[0],
+    };
+
+    const updatedCampaigns = [...campaigns, newCampaign];
+    setCampaigns(updatedCampaigns);
+    saveCampaigns(updatedCampaigns);
+
+    // Reset inputs
+    setAdminCampaignName("");
+    setAdminTargetUrl("");
+    setAdminPayout(300.0);
+    setAdminDescription("");
+
+    // Set as selected campaign in creator
+    setSelectedCampaignId(newCampaign.id);
+
+    // Notify user
+    const id = toastIdRef.current++;
+    setToasts((prev) => [...prev, { id, message: `Admin: Added target campaign "${adminCampaignName}"`, type: "click" }]);
+    window.dispatchEvent(new Event("storage"));
+  };
+
+  // Handle Admin Campaign Delete
+  const handleDeleteCampaign = (id: string) => {
+    const updated = campaigns.filter(c => c.id !== id);
+    setCampaigns(updated);
+    saveCampaigns(updated);
+
+    const idToast = toastIdRef.current++;
+    setToasts((prev) => [...prev, { id: idToast, message: "Admin: Deleted campaign", type: "click" }]);
+    window.dispatchEvent(new Event("storage"));
   };
 
   // Calculations for computed ratios
   const ctr = totalClicks > 0 ? ((totalConversions / totalClicks) * 100).toFixed(2) : "0.00";
-  const epc = totalClicks > 0 ? (totalRevenue / totalClicks).toFixed(2) : "0.00";
+  const epr = totalConversions > 0 ? (totalRevenue / totalConversions).toFixed(2) : "0.00";
 
   // Mock bot support chat flow
   const handleSendChat = (e: React.FormEvent) => {
@@ -311,7 +445,7 @@ export default function DashboardView({ publisherName, onLogout }: DashboardView
       const query = userMsg.toLowerCase();
       
       if (query.includes("payout") || query.includes("payment") || query.includes("money") || query.includes("paisa")) {
-        reply = "Ads2Pub par payouts har Monday subah automatically process hote hain. Payout threshold $10 hai. Aap Payouts tab me jaakar details verify kar sakte hain.";
+        reply = "Ads2Pub par payouts har Monday subah automatically process hote hain. Payout threshold ₹1,000 hai. Aap Payouts tab me jaakar details verify kar sakte hain.";
       } else if (query.includes("link") || query.includes("campaign")) {
         reply = "Aap 'Link Builder' tab me custom redirect links generate kar sakte hain. WhatsApp, Telegram aur Facebook lists traffic ke liye high-converting landing route defaults choose hote hain.";
       } else if (query.includes("traffic") || query.includes("click") || query.includes("fake")) {
@@ -410,11 +544,12 @@ export default function DashboardView({ publisherName, onLogout }: DashboardView
       </div>
 
       {/* Main Tab Select Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-8">
         {[
           { key: "overview", label: "Analytics Overview", icon: TrendingUp },
           { key: "links", label: "Smart Link Creator", icon: LinkIcon },
           { key: "payouts", label: "Payouts & Wallet", icon: CreditCard },
+          { key: "admin", label: "Admin Campaigns", icon: Settings },
           { key: "support", label: "Support Chat", icon: HelpCircle },
         ].map((tab) => {
           const TabIcon = tab.icon;
@@ -448,7 +583,7 @@ export default function DashboardView({ publisherName, onLogout }: DashboardView
                 <div className="absolute -top-12 -right-12 h-24 w-24 rounded-full bg-emerald-500/5 blur-xl pointer-events-none" />
                 <span className="text-xs font-normal text-zinc-400 uppercase tracking-widest block">Available Balance</span>
                 <span className="text-3xl font-normal text-zinc-900 block mt-2">
-                  ${balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  ₹{balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
                 <span className="text-[10px] text-emerald-600 flex items-center gap-1 mt-2.5 font-normal">
                   <CheckCircle className="h-3 w-3" />
@@ -460,7 +595,7 @@ export default function DashboardView({ publisherName, onLogout }: DashboardView
                 <div className="absolute -top-12 -right-12 h-24 w-24 rounded-full bg-blue-500/5 blur-xl pointer-events-none" />
                 <span className="text-xs font-normal text-zinc-400 uppercase tracking-widest block">Pending Earnings</span>
                 <span className="text-3xl font-normal text-zinc-900 block mt-2">
-                  ${pending.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  ₹{pending.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
                 <span className="text-[10px] text-zinc-500 flex items-center gap-1 mt-2.5 font-normal">
                   <Clock className="h-3 w-3" />
@@ -486,8 +621,8 @@ export default function DashboardView({ publisherName, onLogout }: DashboardView
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {[
                 { label: "Total Clicks", val: totalClicks, icon: MousePointerClick, color: "text-blue-600 bg-blue-50" },
-                { label: "Total Revenue", val: `$${totalRevenue.toFixed(0)}`, icon: DollarSign, color: "text-emerald-700 bg-emerald-50" },
-                { label: "Average EPC", val: `$${epc}`, icon: TrendingUp, color: "text-purple-700 bg-purple-50" },
+                { label: "Total Revenue", val: `₹${totalRevenue.toFixed(0)}`, icon: IndianRupee, color: "text-emerald-700 bg-emerald-50" },
+                { label: "Average EPR", val: `₹${epr}`, icon: TrendingUp, color: "text-purple-700 bg-purple-50" },
                 { label: "CTR Ratio", val: `${ctr}%`, icon: ShieldCheck, color: "text-amber-700 bg-amber-50" },
               ].map((stat, idx) => {
                 const Icon = stat.icon;
@@ -577,15 +712,36 @@ export default function DashboardView({ publisherName, onLogout }: DashboardView
 
               <form onSubmit={handleCreateLink} className="space-y-4 relative z-10">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-normal text-zinc-500">Campaign Name / Identifier</label>
+                  <label className="text-xs font-normal text-zinc-500">Smart Link Name / Identifier</label>
                   <input
                     type="text"
                     required
                     value={campaignName}
                     onChange={(e) => setCampaignName(e.target.value)}
-                    placeholder="e.g., Summer Gadgets Offer"
+                    placeholder="e.g., Samir Crypto Telegram Channel"
                     className="shadcn-input text-xs"
                   />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-normal text-zinc-500">Select Target Campaign (Offers)</label>
+                  {campaigns.length === 0 ? (
+                    <div className="text-xs text-rose-500 bg-rose-50 p-2.5 border border-rose-100 rounded-xl font-normal">
+                      No campaigns found. Please add a campaign in the <strong>Admin Campaigns</strong> tab first.
+                    </div>
+                  ) : (
+                    <select
+                      value={selectedCampaignId}
+                      onChange={(e) => setSelectedCampaignId(e.target.value)}
+                      className="shadcn-select text-xs"
+                    >
+                      {campaigns.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name} (Pays ₹{c.payout}/reg)
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
 
                 <div className="space-y-1.5">
@@ -605,19 +761,10 @@ export default function DashboardView({ publisherName, onLogout }: DashboardView
                   </select>
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-xs font-normal text-zinc-500">Default Redirect Route (Ads2Pub Smart Route)</label>
-                  <input
-                    type="text"
-                    disabled
-                    value={redirectUrl}
-                    className="w-full rounded-xl border border-zinc-100 bg-zinc-50 py-2.5 px-3.5 text-xs text-zinc-400 select-none cursor-not-allowed font-normal"
-                  />
-                </div>
-
                 <button
                   type="submit"
-                  className="w-full mt-2 rounded-xl bg-blue-600 hover:bg-blue-700 py-3 text-xs font-normal text-white shadow-sm transition-all"
+                  disabled={campaigns.length === 0}
+                  className="w-full mt-2 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:bg-zinc-200 disabled:cursor-not-allowed py-3 text-xs font-normal text-white shadow-sm transition-all"
                 >
                   Create Smart Link URL
                 </button>
@@ -657,18 +804,32 @@ export default function DashboardView({ publisherName, onLogout }: DashboardView
                         <span className="text-[10px] text-zinc-400 font-normal font-mono block mt-1">{link.url}</span>
                       </div>
 
-                      {/* Copy Action */}
-                      <button
-                        onClick={() => copyToClipboard(link.url, link.id)}
-                        className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-normal transition-all border shrink-0 ${
-                          copySuccess === link.id
-                            ? "bg-emerald-50 border-emerald-200 text-emerald-700"
-                            : "bg-white border-zinc-200 hover:bg-zinc-50 text-zinc-700"
-                        }`}
-                      >
-                        <Copy className="h-3.5 w-3.5" />
-                        {copySuccess === link.id ? "Copied!" : "Copy URL"}
-                      </button>
+                      {/* Actions */}
+                      <div className="flex gap-2 shrink-0">
+                        {/* Open Test Link */}
+                        <a
+                          href={link.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center gap-1.5 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100 px-3 py-1.5 text-xs font-normal transition-all"
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" />
+                          Test Link
+                        </a>
+
+                        {/* Copy Action */}
+                        <button
+                          onClick={() => copyToClipboard(link.url, link.id)}
+                          className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-normal transition-all border ${
+                            copySuccess === link.id
+                              ? "bg-emerald-50 border-emerald-200 text-emerald-700"
+                              : "bg-white border-zinc-200 hover:bg-zinc-50 text-zinc-700"
+                          }`}
+                        >
+                          <Copy className="h-3.5 w-3.5" />
+                          {copySuccess === link.id ? "Copied!" : "Copy URL"}
+                        </button>
+                      </div>
                     </div>
 
                     {/* Mini statistics values inside link row */}
@@ -683,7 +844,7 @@ export default function DashboardView({ publisherName, onLogout }: DashboardView
                       </div>
                       <div>
                         <span className="text-[9px] text-zinc-400 font-normal block uppercase">Revenue</span>
-                        <span className="text-xs font-normal text-zinc-900">${link.revenue.toFixed(0)}</span>
+                        <span className="text-xs font-normal text-zinc-900">₹{link.revenue.toFixed(0)}</span>
                       </div>
                     </div>
                   </div>
@@ -791,11 +952,11 @@ export default function DashboardView({ publisherName, onLogout }: DashboardView
                   >
                     <div className="flex items-center gap-3">
                       <div className="h-8 w-8 rounded-lg bg-white border border-zinc-200 flex items-center justify-center text-xs font-normal text-emerald-600">
-                        $
+                        ₹
                       </div>
                       <div>
-                        <h4 className="text-xs font-normal text-zinc-900">${historyItem.amount.toFixed(2)}</h4>
-                        <p className="text-[9px] text-zinc-400 font-normal mt-0.5">Paid via {historyItem.method} on {historyItem.date}</p>
+                        <h4 className="text-xs font-normal text-zinc-900">₹{historyItem.amount.toFixed(0)}</h4>
+                        <p className="text-[9px] text-zinc-400 font-normal mt-0.5 font-sans">Paid via {historyItem.method} on {historyItem.date}</p>
                       </div>
                     </div>
                     <span className="text-[10px] font-normal text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
@@ -809,6 +970,173 @@ export default function DashboardView({ publisherName, onLogout }: DashboardView
           </div>
         )}
 
+        {activeTab === "admin" && (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            
+            {/* Left Column: Create Campaign */}
+            <div className="lg:col-span-5 rounded-2xl border border-zinc-200 bg-white p-6 shadow-xs relative overflow-hidden">
+              <div className="absolute -bottom-16 -left-16 h-36 w-36 bg-blue-500/5 blur-2xl pointer-events-none" />
+              
+              <div className="flex items-center gap-2 mb-6">
+                <PlusCircle className="h-5 w-5 text-blue-600" />
+                <h3 className="text-base font-normal text-zinc-900">Add Target Campaign (Admin)</h3>
+              </div>
+
+              <form onSubmit={handleCreateCampaign} className="space-y-4 relative z-10">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-normal text-zinc-500">Campaign Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={adminCampaignName}
+                    onChange={(e) => setAdminCampaignName(e.target.value)}
+                    placeholder="e.g., Binance Sign-up Promo"
+                    className="shadcn-input text-xs"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-normal text-zinc-500">Main Target Registration Link</label>
+                  <input
+                    type="url"
+                    required
+                    value={adminTargetUrl}
+                    onChange={(e) => setAdminTargetUrl(e.target.value)}
+                    placeholder="https://example.com/register?ref=samir"
+                    className="shadcn-input text-xs"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-normal text-zinc-500">Payout per Registration (INR ₹)</label>
+                  <input
+                    type="number"
+                    required
+                    min="1"
+                    value={adminPayout}
+                    onChange={(e) => setAdminPayout(Number(e.target.value))}
+                    placeholder="e.g., 300.00"
+                    className="shadcn-input text-xs"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-normal text-zinc-500">Requirement Description</label>
+                  <textarea
+                    rows={3}
+                    value={adminDescription}
+                    onChange={(e) => setAdminDescription(e.target.value)}
+                    placeholder="Explain what the visitor must do, e.g., register with phone number and verify KYC to credit the referral."
+                    className="shadcn-input text-xs"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full mt-2 rounded-xl bg-blue-600 hover:bg-blue-700 py-3 text-xs font-normal text-white shadow-sm transition-all"
+                >
+                  Create Target Campaign
+                </button>
+              </form>
+            </div>
+
+            {/* Right Column: Campaigns List & Webhook Docs */}
+            <div className="lg:col-span-7 space-y-6">
+              
+              {/* Campaigns list */}
+              <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-xs">
+                <div className="flex justify-between items-center mb-6">
+                  <div>
+                    <h3 className="text-base font-normal text-zinc-900">Offered Target Campaigns</h3>
+                    <p className="text-xs text-zinc-400 font-normal">Active registration campaigns publishers can promote</p>
+                  </div>
+                  <span className="text-xs text-zinc-500 font-normal">{campaigns.length} Campaigns</span>
+                </div>
+
+                <div className="space-y-3 overflow-y-auto max-h-[300px] pr-1">
+                  {campaigns.length === 0 ? (
+                    <div className="text-center py-8 text-xs text-zinc-400 font-normal">
+                      No campaigns active. Add one using the form.
+                    </div>
+                  ) : (
+                    campaigns.map((camp) => (
+                      <div
+                        key={camp.id}
+                        className="rounded-xl border border-zinc-200 bg-zinc-50/50 p-4 hover:border-zinc-300 transition-colors"
+                      >
+                        <div className="flex justify-between items-start gap-4">
+                          <div>
+                            <h4 className="text-xs font-normal text-zinc-900">{camp.name}</h4>
+                            <p className="text-[10px] text-zinc-400 font-normal mt-0.5 truncate max-w-md">
+                              Link: {camp.targetUrl}
+                            </p>
+                            <span className="inline-block text-[9px] bg-blue-50 text-blue-600 border border-blue-200 px-2 py-0.5 rounded-full mt-2 font-normal">
+                              Payout: ₹{camp.payout.toFixed(0)} per Register
+                            </span>
+                          </div>
+
+                          <button
+                            onClick={() => handleDeleteCampaign(camp.id)}
+                            className="text-zinc-400 hover:text-rose-600 p-1 rounded transition-colors"
+                            title="Delete Campaign"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+
+                        {/* mini stats */}
+                        <div className="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-zinc-200 text-center">
+                          <div>
+                            <span className="text-[9px] text-zinc-400 font-normal block uppercase">Clicks</span>
+                            <span className="text-xs font-normal text-zinc-900">{camp.clicks || 0}</span>
+                          </div>
+                          <div>
+                            <span className="text-[9px] text-zinc-400 font-normal block uppercase">Registrations</span>
+                            <span className="text-xs font-normal text-emerald-600">{camp.conversions || 0}</span>
+                          </div>
+                          <div>
+                            <span className="text-[9px] text-zinc-400 font-normal block uppercase">Total Spent</span>
+                            <span className="text-xs font-normal text-zinc-900">₹{(camp.revenue || 0).toFixed(0)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* Developer Integration Docs */}
+              <div className="rounded-2xl border border-zinc-200 bg-zinc-950 p-6 text-white shadow-lg relative overflow-hidden">
+                <div className="absolute top-0 right-0 h-32 w-32 bg-blue-600/10 rounded-full blur-2xl pointer-events-none" />
+                
+                <div className="flex items-center gap-2 mb-4">
+                  <Cpu className="h-4 w-4 text-blue-400 animate-pulse" />
+                  <span className="text-xs font-normal uppercase tracking-widest text-zinc-400">
+                    S2S Webhook / Postback Integration (Developers)
+                  </span>
+                </div>
+
+                <h3 className="text-sm font-normal text-white mb-2">How Real Tracking Works</h3>
+                <p className="text-xs text-zinc-400 leading-relaxed mb-4 font-normal">
+                  In production, when a visitor clicks a publisher's link, they are redirected to your target link with a unique <code>click_id</code> sub-parameter.
+                  Once they complete their registration on your external site, your server calls our S2S postback webhook to confirm:
+                </p>
+
+                <div className="bg-zinc-900 rounded-xl p-3 border border-zinc-800 font-mono text-[10px] text-emerald-400 overflow-x-auto whitespace-pre-wrap select-all">
+                  GET {typeof window !== "undefined" ? window.location.origin : "http://localhost:3000"}/api/postback?click_id=UNIQUE_CLICK_ID&payout_VAL
+                </div>
+
+                <div className="mt-4 flex items-center gap-2 text-[10px] text-zinc-500 font-normal">
+                  <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span>Postback listener is active & simulated in the bridge test sandbox.</span>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+        )}
+
         {activeTab === "support" && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             
@@ -817,8 +1145,8 @@ export default function DashboardView({ publisherName, onLogout }: DashboardView
               <h3 className="text-base font-normal text-zinc-900 mb-4">Quick Publisher FAQ</h3>
               <div className="space-y-4">
                 {[
-                  { q: "Minimum threshold balance?", a: "Minimum withdrawal balance threshold is $10. Lower balances remain saved inside account until cleared." },
-                  { q: "What is CTR & EPC metric?", a: "CTR represents Click-through-rate percentage of click counts. EPC represents average earnings generated from a single visitor redirect." },
+                  { q: "Minimum threshold balance?", a: "Minimum withdrawal balance threshold is ₹1,000. Lower balances remain saved inside account until cleared." },
+                  { q: "What is CTR & EPR metric?", a: "CTR represents Click-through-rate percentage of click counts. EPR represents average earnings generated from a successful registration." },
                   { q: "Approved traffic lists details?", a: "Traffic lists such as WhatsApp statuses, Telegram groups, Facebook wall posts, and organic media views are auto-approved." },
                 ].map((faq, i) => (
                   <div key={i} className="space-y-1">

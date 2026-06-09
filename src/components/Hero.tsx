@@ -2,7 +2,7 @@
 
 import React from "react";
 import { motion } from "framer-motion";
-import { ArrowRight, Play, Zap, Users, TrendingUp, DollarSign } from "lucide-react";
+import { ArrowRight, Play, Zap, Users, TrendingUp, IndianRupee } from "lucide-react";
 
 interface HeroProps {
   onStart: () => void;
@@ -93,7 +93,7 @@ export default function Hero({ onStart }: HeroProps) {
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-blue-600 mb-2">
               <Users className="h-5 w-5" />
             </div>
-            <span className="text-2xl font-normal text-zinc-950 sm:text-3xl">12,480+</span>
+            <span className="text-2xl font-normal text-zinc-955 sm:text-3xl">12,480+</span>
             <span className="text-xs font-normal text-zinc-400 uppercase tracking-wider mt-1">Active Publishers</span>
           </div>
 
@@ -101,15 +101,15 @@ export default function Hero({ onStart }: HeroProps) {
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 mb-2">
               <TrendingUp className="h-5 w-5" />
             </div>
-            <span className="text-2xl font-normal text-zinc-950 sm:text-3xl">24.8M+</span>
+            <span className="text-2xl font-normal text-zinc-955 sm:text-3xl">24.8M+</span>
             <span className="text-xs font-normal text-zinc-400 uppercase tracking-wider mt-1">Clicks Tracked</span>
           </div>
 
           <div className="flex flex-col items-center col-span-2 md:col-span-1">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 mb-2">
-              <DollarSign className="h-5 w-5" />
+              <IndianRupee className="h-5 w-5" />
             </div>
-            <span className="text-2xl font-normal text-zinc-900 sm:text-3xl">$100K+</span>
+            <span className="text-2xl font-normal text-zinc-900 sm:text-3xl">₹80L+</span>
             <span className="text-xs font-normal text-zinc-400 uppercase tracking-wider mt-1">Total Payouts Paid</span>
           </div>
         </motion.div>

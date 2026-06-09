@@ -1,0 +1,139 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Admin {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+}
+
+model Publisher {
+  id            String          @id @default(cuid())
+  email         String          @unique
+  passwordHash  String
+  name          String
+  phone         String?
+  walletBalance Decimal         @default(0) @db.Decimal(10, 2)
+  isActive      Boolean         @default(true)
+  trackingLinks TrackingLink[]
+  conversions   Conversion[]
+  withdrawals   PubWithdrawal[]
+  createdAt     DateTime        @default(now())
+}
+
+model TrackingLink {
+  id          String       @id @default(cuid())
+  publisherId String
+  publisher   Publisher    @relation(fields: [publisherId], references: [id])
+  uniqueCode  String       @unique
+  targetUrl   String
+  linkType    String       @default("direct")
+  clicks      Int          @default(0)
+  conversions Conversion[]
+  createdAt   DateTime     @default(now())
+}
+
+model Conversion {
+  id             String       @id @default(cuid())
+  publisherId    String
+  publisher      Publisher    @relation(fields: [publisherId], references: [id])
+  trackingLinkId String
+  trackingLink   TrackingLink @relation(fields: [trackingLinkId], references: [id])
+  externalUserId String
+  amount         Decimal      @default(0.05) @db.Decimal(10, 2)
+  status         String       @default("CONFIRMED")
+  createdAt      DateTime     @default(now())
+
+  @@unique([publisherId, externalUserId])
+}
+
+model PubWithdrawal {
+  id          String    @id @default(cuid())
+  publisherId String
+  publisher   Publisher @relation(fields: [publisherId], references: [id])
+  amount      Decimal   @db.Decimal(10, 2)
+  upiId       String
+  status      String    @default("PENDING")
+  note        String?
+  requestedAt DateTime  @default(now())
+  processedAt DateTime?
+}
+
+model TrafficUser {
+  id            String              @id @default(cuid())
+  email         String              @unique
+  passwordHash  String
+  name          String
+  phone         String?
+  walletBalance Decimal             @default(0) @db.Decimal(10, 2)
+  isActive      Boolean             @default(true)
+  trafficLinks  TrafficLink[]
+  earnings      TrafficEarning[]
+  withdrawals   TrafficWithdrawal[]
+  createdAt     DateTime            @default(now())
+}
+
+model TrafficLink {
+  id           String           @id @default(cuid())
+  userId       String
+  user         TrafficUser      @relation(fields: [userId], references: [id])
+  uniqueCode   String           @unique
+  targetUrl    String
+  totalClicks  Int              @default(0)
+  uniqueClicks Int              @default(0)
+  conversions  Int              @default(0)
+  isActive     Boolean          @default(true)
+  clicks       TrafficClick[]
+  earnings     TrafficEarning[]
+  createdAt    DateTime         @default(now())
+}
+
+model TrafficClick {
+  id            String      @id @default(cuid())
+  trafficLinkId String
+  trafficLink   TrafficLink @relation(fields: [trafficLinkId], references: [id])
+  ip            String
+  userAgent     String
+  country       String?
+  device        String?
+  isUnique      Boolean     @default(true)
+  timestamp     DateTime    @default(now())
+}
+
+model TrafficEarning {
+  id             String      @id @default(cuid())
+  userId         String
+  user           TrafficUser @relation(fields: [userId], references: [id])
+  trafficLinkId  String
+  trafficLink    TrafficLink @relation(fields: [trafficLinkId], references: [id])
+  externalUserId String
+  amount         Decimal     @default(3.00) @db.Decimal(10, 2)
+  createdAt      DateTime    @default(now())
+
+  @@unique([trafficLinkId, externalUserId])
+}
+
+model TrafficWithdrawal {
+  id          String      @id @default(cuid())
+  userId      String
+  user        TrafficUser @relation(fields: [userId], references: [id])
+  amount      Decimal     @db.Decimal(10, 2)
+  upiId       String
+  status      String      @default("PENDING")
+  note        String?
+  requestedAt DateTime    @default(now())
+  processedAt DateTime?
+}
+
+model GlobalConfig {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+}

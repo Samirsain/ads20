@@ -3,27 +3,27 @@
 import React, { useState, useEffect } from "react";
 import { HelpCircle, Sparkles, Send, Calendar, CreditCard, DollarSign } from "lucide-react";
 
-const PLATFORM_DEFAULTS: Record<string, { name: string; epc: number; icon: string; iconPath?: string }> = {
-  telegram: { name: "Telegram Channel / Group", epc: 2.80, icon: "✈️", iconPath: "/telegram-logo.png" },
-  whatsapp: { name: "WhatsApp Group / Status", epc: 2.10, icon: "💬", iconPath: "/whatsapp-logo.png" },
-  facebook: { name: "Facebook Pages / Groups", epc: 1.65, icon: "📘", iconPath: "/facebook-logo.png" },
-  instagram: { name: "Instagram Bio / Stories", epc: 2.20, icon: "📸", iconPath: "/instagram-logo.png" },
-  youtube: { name: "YouTube Description / Community", epc: 3.20, icon: "🎥", iconPath: "/youtube-logo.png" },
-  twitter: { name: "X (Twitter) Feed", epc: 1.90, icon: "🐦", iconPath: "/twitter-logo.png" },
+const PLATFORM_DEFAULTS: Record<string, { name: string; payout: number; icon: string; iconPath?: string }> = {
+  telegram: { name: "Telegram Channel / Group", payout: 350, icon: "✈️", iconPath: "/telegram-logo.png" },
+  whatsapp: { name: "WhatsApp Group / Status", payout: 300, icon: "💬", iconPath: "/whatsapp-logo.png" },
+  facebook: { name: "Facebook Pages / Groups", payout: 250, icon: "📘", iconPath: "/facebook-logo.png" },
+  instagram: { name: "Instagram Bio / Stories", payout: 400, icon: "📸", iconPath: "/instagram-logo.png" },
+  youtube: { name: "YouTube Description / Community", payout: 500, icon: "🎥", iconPath: "/youtube-logo.png" },
+  twitter: { name: "X (Twitter) Feed", payout: 300, icon: "🐦", iconPath: "/twitter-logo.png" },
 };
 
 export default function EarningCalculator() {
   const [platform, setPlatform] = useState("telegram");
-  const [clicks, setClicks] = useState(2500);
-  const [epc, setEpc] = useState(2.80);
+  const [registrations, setRegistrations] = useState(20);
+  const [payout, setPayout] = useState(350);
 
-  // Sync EPC when platform changes
+  // Sync payout when platform changes
   useEffect(() => {
-    setEpc(PLATFORM_DEFAULTS[platform].epc);
+    setPayout(PLATFORM_DEFAULTS[platform].payout);
   }, [platform]);
 
   // Calculations
-  const dailyEarnings = clicks * epc;
+  const dailyEarnings = registrations * payout;
   const weeklyEarnings = dailyEarnings * 7;
   const monthlyEarnings = dailyEarnings * 30;
 
@@ -37,7 +37,7 @@ export default function EarningCalculator() {
             Monetization Calculator
           </h2>
           <p className="mt-4 text-zinc-650 font-normal">
-            Select your traffic source, adjust the clicks slider, and see how much you can earn with Ads2Pub's smart campaign matching.
+            Apne traffic source ke mutabik expected daily registrations aur per-conversion payout select karke earning estimate check karein.
           </p>
         </div>
 
@@ -79,62 +79,62 @@ export default function EarningCalculator() {
               </div>
             </div>
 
-            {/* Click Volume Slider */}
+            {/* Registration Volume Slider */}
             <div>
               <div className="flex justify-between items-center mb-2">
                 <label className="text-xs font-normal text-zinc-500 uppercase tracking-wider">
-                  2. Daily Clicks / Visitors
+                  2. Daily Successful Registrations
                 </label>
                 <span className="text-sm font-normal text-blue-600 bg-blue-50 px-3 py-1 rounded-lg">
-                  {clicks.toLocaleString()} Clicks
+                  {registrations} Signups / Day
                 </span>
               </div>
               <input
                 type="range"
-                min="100"
-                max="50000"
-                step="100"
-                value={clicks}
-                onChange={(e) => setClicks(parseInt(e.target.value))}
+                min="1"
+                max="500"
+                step="1"
+                value={registrations}
+                onChange={(e) => setRegistrations(parseInt(e.target.value))}
                 className="w-full h-2 bg-zinc-100 rounded-lg appearance-none cursor-pointer accent-blue-600 focus:outline-none"
               />
               <div className="flex justify-between text-[10px] font-normal text-zinc-400 mt-2">
-                <span>100 clicks</span>
-                <span>10k</span>
-                <span>25k</span>
-                <span>50k clicks / day</span>
+                <span>1 register</span>
+                <span>100</span>
+                <span>250</span>
+                <span>500 signups / day</span>
               </div>
             </div>
 
-            {/* Custom EPC Slider */}
+            {/* Payout per register Slider */}
             <div>
               <div className="flex justify-between items-center mb-2">
                 <span className="flex items-center gap-1.5 text-xs font-normal text-zinc-500 uppercase tracking-wider">
-                  3. Average EPC (Earnings Per Click)
+                  3. Payout Per Registration (INR)
                   <span className="group relative cursor-pointer text-zinc-400 hover:text-zinc-650">
                     <HelpCircle className="h-4 w-4" />
                     <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 scale-0 rounded-lg bg-zinc-950 p-2 text-xs text-zinc-200 transition-all group-hover:scale-100 border border-zinc-800 z-20 font-normal normal-case">
-                      EPC stands for Earnings Per Click. It varies based on country, traffic source, and campaign quality.
+                      Registration hone par milne wala reward amount. Har campaign ka reward rate different hota hai.
                     </span>
                   </span>
                 </span>
                 <span className="text-sm font-normal text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg">
-                  ${epc.toFixed(2)}
+                  ₹{payout}
                 </span>
               </div>
               <input
                 type="range"
-                min="0.50"
-                max="10.00"
-                step="0.05"
-                value={epc}
-                onChange={(e) => setEpc(parseFloat(e.target.value))}
+                min="50"
+                max="1500"
+                step="10"
+                value={payout}
+                onChange={(e) => setPayout(parseInt(e.target.value))}
                 className="w-full h-2 bg-zinc-100 rounded-lg appearance-none cursor-pointer accent-emerald-600 focus:outline-none"
               />
               <div className="flex justify-between text-[10px] font-normal text-zinc-400 mt-2">
-                <span>$0.50</span>
-                <span>$5.00</span>
-                <span>$10.00 EPC</span>
+                <span>₹50</span>
+                <span>₹500</span>
+                <span>₹1,500 per signup</span>
               </div>
             </div>
 
@@ -147,7 +147,7 @@ export default function EarningCalculator() {
             <div className="space-y-6">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-normal text-emerald-700 shadow-xs">
                 <Sparkles className="h-3.5 w-3.5 animate-pulse" />
-                Estimated Revenue
+                Estimated Revenue (INR)
               </span>
 
               {/* Earnings Breakdown */}
@@ -158,7 +158,7 @@ export default function EarningCalculator() {
                     <span className="text-xs font-normal uppercase tracking-wider">Daily Income</span>
                   </div>
                   <div className="text-right">
-                    <span className="text-lg font-normal text-zinc-900">${dailyEarnings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    <span className="text-lg font-normal text-zinc-900">₹{dailyEarnings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
                 </div>
 
@@ -168,17 +168,17 @@ export default function EarningCalculator() {
                     <span className="text-xs font-normal uppercase tracking-wider">Weekly Payout</span>
                   </div>
                   <div className="text-right">
-                    <span className="text-2xl font-normal text-emerald-600">${weeklyEarnings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    <span className="text-2xl font-normal text-emerald-600">₹{weeklyEarnings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
                 </div>
 
                 <div className="flex justify-between items-baseline pb-2">
-                  <div className="flex items-center gap-2 text-zinc-500">
-                    <DollarSign className="h-4.5 w-4.5 text-indigo-500" />
+                  <span className="flex items-center gap-2 text-zinc-500">
+                    <CreditCard className="h-4.5 w-4.5 text-indigo-500" />
                     <span className="text-xs font-normal uppercase tracking-wider">Monthly Earnings</span>
-                  </div>
+                  </span>
                   <div className="text-right">
-                    <span className="text-lg font-normal text-zinc-900">${monthlyEarnings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    <span className="text-lg font-normal text-zinc-900">₹{monthlyEarnings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
                 </div>
               </div>
@@ -188,7 +188,7 @@ export default function EarningCalculator() {
             <div className="mt-8 pt-4 border-t border-zinc-200 flex gap-2 items-start text-xs text-zinc-500">
               <CreditCard className="h-4 w-4 shrink-0 text-blue-600 mt-0.5" />
               <span className="leading-normal">
-                Weekly payouts are processed automatically every Monday. Minimum withdrawal: $10.
+                Weekly payouts are processed automatically every Monday. Minimum withdrawal: ₹1,000.
               </span>
             </div>
 
