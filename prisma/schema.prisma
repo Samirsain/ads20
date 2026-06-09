@@ -24,6 +24,7 @@ model Publisher {
   trackingLinks TrackingLink[]
   conversions   Conversion[]
   withdrawals   PubWithdrawal[]
+  clickEvents   Click[]
   createdAt     DateTime        @default(now())
 }
 
@@ -36,6 +37,7 @@ model TrackingLink {
   linkType    String       @default("direct")
   clicks      Int          @default(0)
   conversions Conversion[]
+  clickEvents Click[]
   createdAt   DateTime     @default(now())
 }
 
@@ -136,4 +138,16 @@ model GlobalConfig {
   key       String   @unique
   value     String
   updatedAt DateTime @updatedAt
+}
+
+model Click {
+  id             String       @id @default(cuid())
+  trackingLinkId String
+  trackingLink   TrackingLink @relation(fields: [trackingLinkId], references: [id])
+  publisherId    String
+  publisher      Publisher    @relation(fields: [publisherId], references: [id])
+  ip             String
+  userAgent      String
+  referrer       String       @default("")
+  timestamp      DateTime     @default(now())
 }

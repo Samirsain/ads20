@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Plus, Copy, Check, ExternalLink, RefreshCw, X, Link2, AlertCircle } from 'lucide-react'
+import { Plus, Copy, Check, ExternalLink, RefreshCw, X, Link2, AlertCircle, Loader2 } from 'lucide-react'
 
 interface TrackingLink {
   id: string
