@@ -36,7 +36,7 @@ export default function PublisherSidebar() {
     <>
       {/* Mobile Toggle */}
       <button
-        className="fixed top-4 left-4 z-50 flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-md border border-slate-200 lg:hidden"
+        className="fixed top-4 left-4 z-50 flex h-10 w-10 items-center justify-center rounded-xl bg-slate-800 text-white shadow-md border border-slate-700 lg:hidden"
         onClick={() => setOpen(!open)}
       >
         {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
