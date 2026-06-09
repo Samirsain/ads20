@@ -1,14 +1,11 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowRight, Play, Zap, Users, TrendingUp, IndianRupee } from "lucide-react";
 
-interface HeroProps {
-  onStart: () => void;
-}
-
-export default function Hero({ onStart }: HeroProps) {
+export default function Hero() {
   return (
     <section className="relative overflow-hidden pt-20 pb-16 md:pt-32 md:pb-24">
       {/* Background decoration */}
@@ -59,15 +56,16 @@ export default function Hero({ onStart }: HeroProps) {
           transition={{ duration: 0.6, delay: 0.3 }}
           className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4"
         >
-          <motion.button
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={onStart}
-            className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-blue-600 px-8 py-4 text-base font-normal text-white shadow-lg shadow-blue-500/20 hover:bg-blue-700 transition-all"
-          >
-            Start Earning Today
-            <ArrowRight className="h-5 w-5" />
-          </motion.button>
+          <Link href="/publisher/register">
+            <motion.div
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-blue-600 px-8 py-4 text-base font-normal text-white shadow-lg shadow-blue-500/20 hover:bg-blue-700 transition-all cursor-pointer"
+            >
+              Start Earning Today
+              <ArrowRight className="h-5 w-5" />
+            </motion.div>
+          </Link>
 
           <motion.button
             whileHover={{ scale: 1.03 }}

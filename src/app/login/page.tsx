@@ -27,7 +27,7 @@ export default function LoginPage() {
         setError(data.error)
         return
       }
-      router.push('/dashboard')
+      router.push('/publisher/dashboard')
       router.refresh()
     } catch {
       setError('Something went wrong. Please try again.')
