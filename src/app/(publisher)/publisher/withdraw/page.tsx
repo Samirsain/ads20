@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Wallet, CheckCircle, Clock, AlertCircle, Loader2, ArrowRight } from 'lucide-react'
+import { Wallet, CheckCircle, Clock, AlertCircle, Loader2, ArrowRight, CalendarClock, Info } from 'lucide-react'
 
 interface Withdrawal {
   id: string
@@ -13,12 +13,19 @@ interface Withdrawal {
   processedAt: string | null
 }
 
+function getNextMonday(): string {
+  const today = new Date()
+  const day = today.getDay() // 0=Sun, 1=Mon, ...
+  const daysUntilMonday = day === 1 ? 7 : (8 - day) % 7
+  const next = new Date(today)
+  next.setDate(today.getDate() + daysUntilMonday)
+  return next.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })
+}
+
 export default function PublisherWithdrawPage() {
   const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-
-  // Form State
   const [amount, setAmount] = useState('')
   const [upiId, setUpiId] = useState('')
   const [requesting, setRequesting] = useState(false)
@@ -31,9 +38,7 @@ export default function PublisherWithdrawPage() {
     try {
       const res = await fetch('/api/publisher/withdraw')
       const json = await res.json()
-      if (!res.ok || !json.success) {
-        throw new Error(json.error || 'Failed to load withdrawals')
-      }
+      if (!res.ok || !json.success) throw new Error(json.error || 'Failed to load withdrawals')
       setWithdrawals(json.data || [])
     } catch (err: any) {
       setError(err.message || 'Something went wrong')
@@ -47,7 +52,6 @@ export default function PublisherWithdrawPage() {
     setRequesting(true)
     setFormError('')
     setSuccessMsg('')
-
     try {
       const res = await fetch('/api/publisher/withdraw', {
         method: 'POST',
@@ -55,15 +59,11 @@ export default function PublisherWithdrawPage() {
         body: JSON.stringify({ amount: parseFloat(amount), upiId }),
       })
       const json = await res.json()
-
-      if (!res.ok || !json.success) {
-        throw new Error(json.error || 'Withdrawal request failed')
-      }
-
+      if (!res.ok || !json.success) throw new Error(json.error || 'Withdrawal request failed')
       setSuccessMsg('Withdrawal requested successfully!')
       setAmount('')
       setUpiId('')
-      fetchWithdrawals() // Reload history
+      fetchWithdrawals()
     } catch (err: any) {
       setFormError(err.message || 'Error requesting withdrawal')
     } finally {
@@ -71,41 +71,49 @@ export default function PublisherWithdrawPage() {
     }
   }
 
-  useEffect(() => {
-    fetchWithdrawals()
-  }, [])
+  useEffect(() => { fetchWithdrawals() }, [])
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-extrabold text-white tracking-tight flex items-center gap-2">
-          <Wallet className="h-8 w-8 text-blue-500" />
+        <h1 className="text-2xl lg:text-3xl font-extrabold text-white tracking-tight flex items-center gap-2">
+          <Wallet className="h-6 w-6 lg:h-8 lg:w-8 text-blue-500" />
           Withdraw Funds
         </h1>
-        <p className="text-slate-400 mt-1">Request a payout to your UPI ID and view your history</p>
+        <p className="text-slate-400 mt-1 text-sm">Request a payout to your UPI ID</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      {/* Payout Schedule Notice */}
+      <div className="flex items-start gap-3 bg-amber-500/10 border border-amber-500/25 rounded-2xl p-4">
+        <CalendarClock className="h-5 w-5 text-amber-400 shrink-0 mt-0.5" />
+        <div>
+          <p className="text-amber-300 font-semibold text-sm">Weekly Payout — Every Monday</p>
+          <p className="text-amber-400/80 text-xs mt-0.5">
+            Withdrawal requests are processed once a week. Submit your request before Sunday midnight to receive payment on <span className="font-semibold text-amber-300">{getNextMonday()}</span>.
+          </p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Withdrawal Form */}
-        <div className="lg:col-span-1">
-          <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-800 rounded-3xl p-6 shadow-2xl sticky top-8">
-            <h3 className="text-xl font-bold text-white mb-6">Request Payout</h3>
+        <div className="lg:col-span-1 order-1">
+          <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-800 rounded-3xl p-6 shadow-2xl lg:sticky lg:top-8">
+            <h3 className="text-lg font-bold text-white mb-5">Request Payout</h3>
 
             {formError && (
-              <div className="mb-6 p-4 rounded-xl bg-red-950/30 border border-red-800/50 text-red-400 text-sm">
-                {formError}
+              <div className="mb-4 p-3 rounded-xl bg-red-950/30 border border-red-800/50 text-red-400 text-sm flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 shrink-0" /> {formError}
               </div>
             )}
 
             {successMsg && (
-              <div className="mb-6 p-4 rounded-xl bg-emerald-950/30 border border-emerald-800/50 text-emerald-400 text-sm flex items-center gap-2">
-                <CheckCircle className="h-5 w-5" />
-                {successMsg}
+              <div className="mb-4 p-3 rounded-xl bg-emerald-950/30 border border-emerald-800/50 text-emerald-400 text-sm flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 shrink-0" /> {successMsg}
               </div>
             )}
 
-            <form onSubmit={handleWithdraw} className="space-y-5">
+            <form onSubmit={handleWithdraw} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-2">Amount (₹)</label>
                 <input
@@ -115,10 +123,10 @@ export default function PublisherWithdrawPage() {
                   step="0.01"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  className="w-full bg-slate-950/60 border border-slate-800 focus:border-blue-500 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition font-mono"
+                  className="w-full bg-slate-950/60 border border-slate-800 focus:border-blue-500 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition font-mono text-sm"
                   placeholder="500.00"
                 />
-                <p className="text-xs text-slate-500 mt-2">Minimum withdrawal: ₹50</p>
+                <p className="text-xs text-slate-500 mt-1.5">Minimum withdrawal: ₹50</p>
               </div>
 
               <div>
@@ -128,26 +136,26 @@ export default function PublisherWithdrawPage() {
                   required
                   value={upiId}
                   onChange={(e) => setUpiId(e.target.value)}
-                  className="w-full bg-slate-950/60 border border-slate-800 focus:border-blue-500 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition"
+                  className="w-full bg-slate-950/60 border border-slate-800 focus:border-blue-500 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition text-sm"
                   placeholder="name@upi"
                 />
+              </div>
+
+              {/* Reminder inside form */}
+              <div className="flex items-start gap-2 bg-slate-950/40 rounded-xl p-3 border border-slate-800">
+                <Info className="h-4 w-4 text-slate-500 shrink-0 mt-0.5" />
+                <p className="text-xs text-slate-500">Payment will be sent on next Monday after admin approval.</p>
               </div>
 
               <button
                 type="submit"
                 disabled={requesting}
-                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-medium rounded-xl py-3 shadow-lg shadow-blue-600/15 hover:shadow-blue-600/25 active:scale-[0.98] transition disabled:opacity-50 mt-4"
+                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-medium rounded-xl py-3 shadow-lg shadow-blue-600/15 active:scale-[0.98] transition disabled:opacity-50"
               >
                 {requesting ? (
-                  <>
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                    Processing...
-                  </>
+                  <><Loader2 className="h-4 w-4 animate-spin" /> Processing...</>
                 ) : (
-                  <>
-                    Submit Request
-                    <ArrowRight className="h-4 w-4" />
-                  </>
+                  <>Submit Request <ArrowRight className="h-4 w-4" /></>
                 )}
               </button>
             </form>
@@ -155,62 +163,62 @@ export default function PublisherWithdrawPage() {
         </div>
 
         {/* Withdrawal History */}
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 order-2">
           <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-800 rounded-3xl p-6 shadow-2xl">
-            <h3 className="text-xl font-bold text-white mb-6">Payout History</h3>
+            <h3 className="text-lg font-bold text-white mb-5">Payout History</h3>
 
             {error ? (
-              <div className="p-4 rounded-xl bg-red-950/30 border border-red-800/50 text-red-400 text-sm">
-                {error}
-              </div>
+              <div className="p-4 rounded-xl bg-red-950/30 border border-red-800/50 text-red-400 text-sm">{error}</div>
             ) : loading ? (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {Array.from({ length: 3 }).map((_, i) => (
                   <div key={i} className="h-20 bg-slate-800/50 animate-pulse rounded-2xl" />
                 ))}
               </div>
             ) : withdrawals.length === 0 ? (
               <div className="text-center py-12 text-slate-500">
-                <AlertCircle className="h-8 w-8 mx-auto mb-3 text-slate-600" />
-                <p>No withdrawal requests found.</p>
+                <Wallet className="h-10 w-10 mx-auto mb-3 text-slate-700" />
+                <p className="font-medium text-slate-400">No withdrawal requests yet</p>
+                <p className="text-xs mt-1">Your payout history will appear here</p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {withdrawals.map((w) => (
-                  <div key={w.id} className="bg-slate-950/60 border border-slate-800 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-slate-700 transition-colors">
-                    <div>
-                      <div className="flex items-center gap-3 mb-1">
-                        <span className="font-mono text-lg font-bold text-emerald-400">
-                          ₹{Number(w.amount).toFixed(2)}
-                        </span>
-                        {w.status === 'PENDING' && (
-                          <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20">
-                            <Clock className="h-3 w-3" /> PENDING
+                  <div key={w.id} className="bg-slate-950/60 border border-slate-800 rounded-2xl p-4 hover:border-slate-700 transition-colors">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-mono text-base font-bold text-emerald-400">
+                            ₹{Number(w.amount).toFixed(2)}
                           </span>
+                          {w.status === 'PENDING' && (
+                            <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                              <Clock className="h-3 w-3" /> Pending
+                            </span>
+                          )}
+                          {w.status === 'PAID' && (
+                            <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                              <CheckCircle className="h-3 w-3" /> Paid
+                            </span>
+                          )}
+                          {w.status === 'REJECTED' && (
+                            <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20">
+                              <AlertCircle className="h-3 w-3" /> Rejected
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-slate-400 text-xs mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+                          <span>UPI: <span className="text-slate-300 font-mono">{w.upiId}</span></span>
+                          <span className="text-slate-600">•</span>
+                          <span>{new Date(w.requestedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                        </div>
+                        {w.note && (
+                          <p className="text-xs text-slate-500 mt-2 bg-slate-900 rounded-lg px-3 py-2 border border-slate-800">
+                            <span className="text-slate-400 font-medium">Note: </span>{w.note}
+                          </p>
                         )}
-                        {w.status === 'PAID' && (
-                          <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-                            <CheckCircle className="h-3 w-3" /> PAID
-                          </span>
-                        )}
-                        {w.status === 'REJECTED' && (
-                          <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-red-500/10 text-red-500 border border-red-500/20">
-                            <AlertCircle className="h-3 w-3" /> REJECTED
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-slate-400 text-sm flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                        <span>UPI: <span className="text-slate-300">{w.upiId}</span></span>
-                        <span className="hidden sm:inline text-slate-600">•</span>
-                        <span>{new Date(w.requestedAt).toLocaleDateString()}</span>
                       </div>
                     </div>
-
-                    {w.note && (
-                      <div className="bg-slate-900 rounded-xl p-3 text-xs text-slate-400 border border-slate-800 sm:max-w-[200px]">
-                        <strong>Note:</strong> {w.note}
-                      </div>
-                    )}
                   </div>
                 ))}
               </div>
