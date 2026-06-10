@@ -75,7 +75,6 @@ export default function TrafficWithdrawPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
         <h1 className="text-2xl lg:text-3xl font-extrabold text-white tracking-tight flex items-center gap-2">
           <Wallet className="h-6 w-6 lg:h-8 lg:w-8 text-teal-500" />
@@ -90,13 +89,13 @@ export default function TrafficWithdrawPage() {
         <div>
           <p className="text-amber-300 font-semibold text-sm">Weekly Payout — Every Monday</p>
           <p className="text-amber-400/80 text-xs mt-0.5">
-            Withdrawal requests are processed once a week. Submit your request before Sunday midnight to receive payment on <span className="font-semibold text-amber-300">{getNextMonday()}</span>.
+            Withdrawal requests are processed once a week. Submit before Sunday midnight to receive payment on{' '}
+            <span className="font-semibold text-amber-300">{getNextMonday()}</span>.
           </p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Withdrawal Form */}
         <div className="lg:col-span-1 order-1">
           <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-800 rounded-3xl p-6 shadow-2xl lg:sticky lg:top-8">
             <h3 className="text-lg font-bold text-white mb-5">Request Payout</h3>
@@ -115,7 +114,7 @@ export default function TrafficWithdrawPage() {
 
             <form onSubmit={handleWithdraw} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Amount (₹)</label>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Amount ($)</label>
                 <input
                   type="number"
                   required
@@ -126,7 +125,7 @@ export default function TrafficWithdrawPage() {
                   className="w-full bg-slate-950/60 border border-slate-800 focus:border-teal-500 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-teal-500 transition font-mono text-sm"
                   placeholder="500.00"
                 />
-                <p className="text-xs text-slate-500 mt-1.5">Minimum withdrawal: ₹50</p>
+                <p className="text-xs text-slate-500 mt-1.5">Minimum withdrawal: $50</p>
               </div>
 
               <div>
@@ -141,7 +140,6 @@ export default function TrafficWithdrawPage() {
                 />
               </div>
 
-              {/* Reminder inside form */}
               <div className="flex items-start gap-2 bg-slate-950/40 rounded-xl p-3 border border-slate-800">
                 <Info className="h-4 w-4 text-slate-500 shrink-0 mt-0.5" />
                 <p className="text-xs text-slate-500">Payment will be sent on next Monday after admin approval.</p>
@@ -162,7 +160,6 @@ export default function TrafficWithdrawPage() {
           </div>
         </div>
 
-        {/* Withdrawal History */}
         <div className="lg:col-span-2 order-2">
           <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-800 rounded-3xl p-6 shadow-2xl">
             <h3 className="text-lg font-bold text-white mb-5">Payout History</h3>
@@ -185,40 +182,36 @@ export default function TrafficWithdrawPage() {
               <div className="space-y-3">
                 {withdrawals.map((w) => (
                   <div key={w.id} className="bg-slate-950/60 border border-slate-800 rounded-2xl p-4 hover:border-slate-700 transition-colors">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-mono text-base font-bold text-emerald-400">
-                            ₹{Number(w.amount).toFixed(2)}
-                          </span>
-                          {w.status === 'PENDING' && (
-                            <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                              <Clock className="h-3 w-3" /> Pending
-                            </span>
-                          )}
-                          {w.status === 'PAID' && (
-                            <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                              <CheckCircle className="h-3 w-3" /> Paid
-                            </span>
-                          )}
-                          {w.status === 'REJECTED' && (
-                            <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20">
-                              <AlertCircle className="h-3 w-3" /> Rejected
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-slate-400 text-xs mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
-                          <span>UPI: <span className="text-slate-300 font-mono">{w.upiId}</span></span>
-                          <span className="text-slate-600">•</span>
-                          <span>{new Date(w.requestedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
-                        </div>
-                        {w.note && (
-                          <p className="text-xs text-slate-500 mt-2 bg-slate-900 rounded-lg px-3 py-2 border border-slate-800">
-                            <span className="text-slate-400 font-medium">Note: </span>{w.note}
-                          </p>
-                        )}
-                      </div>
+                    <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                      <span className="font-mono text-base font-bold text-emerald-400">
+                        ${Number(w.amount).toFixed(2)}
+                      </span>
+                      {w.status === 'PENDING' && (
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                          <Clock className="h-3 w-3" /> Pending
+                        </span>
+                      )}
+                      {w.status === 'PAID' && (
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                          <CheckCircle className="h-3 w-3" /> Paid
+                        </span>
+                      )}
+                      {w.status === 'REJECTED' && (
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20">
+                          <AlertCircle className="h-3 w-3" /> Rejected
+                        </span>
+                      )}
                     </div>
+                    <div className="text-slate-400 text-xs flex flex-wrap items-center gap-x-3 gap-y-1">
+                      <span>UPI: <span className="text-slate-300 font-mono">{w.upiId}</span></span>
+                      <span className="text-slate-600">•</span>
+                      <span>{new Date(w.requestedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                    </div>
+                    {w.note && (
+                      <p className="text-xs text-slate-500 mt-2 bg-slate-900 rounded-lg px-3 py-2 border border-slate-800">
+                        <span className="text-slate-400 font-medium">Note: </span>{w.note}
+                      </p>
+                    )}
                   </div>
                 ))}
               </div>

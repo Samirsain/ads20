@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
 
     if (amount < minWithdrawal) {
       return NextResponse.json(
-        { success: false, error: `Minimum withdrawal amount is ₹${minWithdrawal}` },
+        { success: false, error: `Minimum withdrawal amount is $${minWithdrawal}` },
         { status: 400 }
       )
     }
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
     const balance = Number(publisherData.walletBalance)
     if (balance < amount) {
       return NextResponse.json(
-        { success: false, error: `Insufficient balance. Available: ₹${balance.toFixed(2)}` },
+        { success: false, error: `Insufficient balance. Available: $${balance.toFixed(2)}` },
         { status: 400 }
       )
     }

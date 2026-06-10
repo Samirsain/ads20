@@ -123,7 +123,7 @@ export default function PublisherConversionsPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 font-mono font-bold text-emerald-400">
-                      +₹{Number(c.amount).toFixed(2)}
+                      +${Number(c.amount).toFixed(2)}
                     </td>
                     <td className="px-6 py-4 text-slate-400 text-xs">
                       {new Date(c.createdAt).toLocaleString()}

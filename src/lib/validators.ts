@@ -44,7 +44,7 @@ export const createTrafficLinkSchema = z.object({
 // ─── Withdrawal ───────────────────────────────────────────────────────────────
 
 export const withdrawalSchema = z.object({
-  amount: z.number().positive('Amount must be positive').min(10, 'Minimum withdrawal is ₹10'),
+  amount: z.number().positive('Amount must be positive').min(10, 'Minimum withdrawal is $10'),
   upiId: z.string().min(5, 'Invalid UPI ID').max(50),
 })
 

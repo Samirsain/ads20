@@ -84,7 +84,7 @@ export default function TrafficDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-6">
         <StatCard
           title="Wallet Balance"
-          value={`₹${Number(data?.walletBalance ?? 0).toFixed(2)}`}
+          value={`$${Number(data?.walletBalance ?? 0).toFixed(2)}`}
           icon={Wallet}
           gradient="from-teal-600/20 to-emerald-600/5"
           border="border-teal-500/20"
@@ -116,7 +116,7 @@ export default function TrafficDashboard() {
         />
         <StatCard
           title="Total Earned"
-          value={`₹${Number(data?.totalEarned ?? 0).toFixed(2)}`}
+          value={`$${Number(data?.totalEarned ?? 0).toFixed(2)}`}
           icon={TrendingUp}
           gradient="from-emerald-600/20 to-green-600/5"
           border="border-emerald-500/20"
@@ -168,7 +168,7 @@ export default function TrafficDashboard() {
                         </span>
                       </td>
                       <td className="px-4 py-3 font-medium text-emerald-400">
-                        ₹{Number(e.amount).toFixed(2)}
+                        ${Number(e.amount).toFixed(2)}
                       </td>
                       <td className="px-4 py-3 text-slate-400 text-xs">
                         {new Date(e.createdAt).toLocaleDateString()} {new Date(e.createdAt).toLocaleTimeString()}

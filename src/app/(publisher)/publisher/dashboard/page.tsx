@@ -92,7 +92,7 @@ export default function PublisherDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           title="Wallet Balance"
-          value={`₹${Number(data?.walletBalance ?? 0).toFixed(2)}`}
+          value={`$${Number(data?.walletBalance ?? 0).toFixed(2)}`}
           icon={Wallet}
           description="Available for withdrawal"
           gradient="from-blue-600/20 to-indigo-600/5"
@@ -119,7 +119,7 @@ export default function PublisherDashboard() {
         />
         <StatCard
           title="Total Earned"
-          value={`₹${Number(data?.totalEarned ?? 0).toFixed(2)}`}
+          value={`$${Number(data?.totalEarned ?? 0).toFixed(2)}`}
           icon={TrendingUp}
           description="All-time system earnings"
           gradient="from-purple-600/20 to-pink-600/5"
@@ -172,7 +172,7 @@ export default function PublisherDashboard() {
                         </span>
                       </td>
                       <td className="px-4 py-3 font-medium text-emerald-400">
-                        ₹{Number(c.amount).toFixed(2)}
+                        ${Number(c.amount).toFixed(2)}
                       </td>
                       <td className="px-4 py-3 text-slate-400 text-xs">
                         {new Date(c.createdAt).toLocaleDateString()} {new Date(c.createdAt).toLocaleTimeString()}

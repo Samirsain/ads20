@@ -173,7 +173,7 @@ export default function TrafficLinksPage() {
                       {link.conversions}
                     </td>
                     <td className="px-6 py-4 font-mono font-medium text-emerald-400">
-                      ₹{Number(link.earned).toFixed(2)}
+                      ${Number(link.earned).toFixed(2)}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">

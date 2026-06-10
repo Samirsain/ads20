@@ -110,7 +110,7 @@ export default function TrafficEarningsPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 font-mono font-medium text-emerald-400">
-                      ₹{Number(earning.amount).toFixed(2)}
+                      ${Number(earning.amount).toFixed(2)}
                     </td>
                     <td className="px-6 py-4 text-center">
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border bg-emerald-500/10 border-emerald-500/25 text-emerald-400">

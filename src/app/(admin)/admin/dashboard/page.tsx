@@ -113,18 +113,18 @@ export default function AdminDashboard() {
         />
         <StatCard
           title="Publisher Payouts"
-          value={`₹${Number(stats?.totalPubEarned ?? 0).toFixed(2)}`}
+          value={`$${Number(stats?.totalPubEarned ?? 0).toFixed(2)}`}
           icon={TrendingUp}
-          description="Earned by publishers (₹0.05 / conversion)"
+          description="Earned by publishers ($0.05 / conversion)"
           gradient="from-sky-600/20 to-blue-600/5"
           border="border-sky-500/20"
           loading={loading}
         />
         <StatCard
           title="Traffic Payouts"
-          value={`₹${Number(stats?.totalTrafficEarned ?? 0).toFixed(2)}`}
+          value={`$${Number(stats?.totalTrafficEarned ?? 0).toFixed(2)}`}
           icon={TrendingUp}
-          description="Earned by traffic users (₹3.00 / conversion)"
+          description="Earned by traffic users ($3.00 / conversion)"
           gradient="from-emerald-600/20 to-green-600/5"
           border="border-emerald-500/20"
           loading={loading}
@@ -140,7 +140,7 @@ export default function AdminDashboard() {
         />
         <StatCard
           title="Total Paid Out"
-          value={`₹${Number(stats?.totalPaid ?? 0).toFixed(2)}`}
+          value={`$${Number(stats?.totalPaid ?? 0).toFixed(2)}`}
           icon={Wallet}
           description="Processed payout requests"
           gradient="from-violet-600/20 to-purple-600/5"

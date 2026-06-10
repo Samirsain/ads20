@@ -160,7 +160,7 @@ export default function AdminTrafficUsersPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 font-mono font-medium text-slate-100">
-                      ₹{Number(user.walletBalance).toFixed(2)}
+                      ${Number(user.walletBalance).toFixed(2)}
                     </td>
                     <td className="px-6 py-4 font-medium">{user._count.trafficLinks}</td>
                     <td className="px-6 py-4 font-medium text-emerald-400">{user._count.earnings}</td>
