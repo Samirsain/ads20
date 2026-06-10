@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Shield, Eye, EyeOff, Loader2 } from 'lucide-react'
 
@@ -11,6 +11,10 @@ export default function AdminLoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    fetch('/api/warmup').catch(() => {})
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
