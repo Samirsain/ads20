@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Plus, Copy, Check, ExternalLink, RefreshCw, X, Link2, AlertCircle, Loader2 } from 'lucide-react'
+import { Plus, Copy, Check, ExternalLink, RefreshCw, X, Link2, AlertCircle, Loader2, MousePointerClick, TrendingUp, DollarSign } from 'lucide-react'
 
 interface TrackingLink {
   id: string
@@ -120,97 +120,122 @@ export default function PublisherLinksPage() {
         </div>
       )}
 
-      {/* Links List */}
-      <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
+      {/* Desktop Table */}
+      <div className="hidden md:block bg-slate-900/40 backdrop-blur-xl border border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-slate-800 text-slate-400 text-xs font-semibold uppercase tracking-wider bg-slate-900/25">
                 <th className="px-6 py-4">Link Code / Target</th>
-                <th className="px-6 py-4">Link Type</th>
+                <th className="px-6 py-4">Type</th>
                 <th className="px-6 py-4 text-center">Clicks</th>
                 <th className="px-6 py-4 text-center">Conversions</th>
                 <th className="px-6 py-4">Earnings</th>
-                <th className="px-6 py-4">Created At</th>
+                <th className="px-6 py-4">Created</th>
                 <th className="px-6 py-4 text-right">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-850 text-slate-300 text-sm">
+            <tbody className="divide-y divide-slate-800/50 text-slate-300 text-sm">
               {loading ? (
-                Array.from({ length: 3 }).map((_, idx) => (
-                  <tr key={idx} className="animate-pulse">
-                    <td className="px-6 py-6" colSpan={7}>
-                      <div className="h-5 bg-slate-800/60 rounded w-full" />
-                    </td>
+                Array.from({ length: 3 }).map((_, i) => (
+                  <tr key={i} className="animate-pulse">
+                    <td className="px-6 py-6" colSpan={7}><div className="h-5 bg-slate-800/60 rounded w-full" /></td>
                   </tr>
                 ))
               ) : links.length === 0 ? (
                 <tr>
                   <td className="px-6 py-12 text-center text-slate-500" colSpan={7}>
-                    <div className="flex flex-col items-center justify-center gap-2">
-                      <Link2 className="h-8 w-8 text-slate-700" />
-                      <span>No links created yet. Click &apos;Create Link&apos; to get started.</span>
+                    <Link2 className="h-8 w-8 text-slate-700 mx-auto mb-2" />
+                    No links created yet. Click &apos;Create Link&apos; to get started.
+                  </td>
+                </tr>
+              ) : links.map((link) => (
+                <tr key={link.id} className="hover:bg-slate-800/20 transition-colors">
+                  <td className="px-6 py-4">
+                    <span className="font-mono bg-slate-950 border border-slate-800 px-2 py-0.5 rounded text-blue-400 text-xs">{link.uniqueCode}</span>
+                    <div className="text-slate-500 text-xs mt-1.5 truncate max-w-[220px]" title={link.targetUrl}>{link.targetUrl}</div>
+                  </td>
+                  <td className="px-6 py-4"><span className="uppercase tracking-wider text-xs font-bold text-slate-400">{link.linkType}</span></td>
+                  <td className="px-6 py-4 text-center font-semibold font-mono text-slate-100">{link.clicks}</td>
+                  <td className="px-6 py-4 text-center font-semibold font-mono text-emerald-400">{link.conversions}</td>
+                  <td className="px-6 py-4 font-mono font-medium text-emerald-400">${Number(link.earned).toFixed(2)}</td>
+                  <td className="px-6 py-4 text-slate-400 text-xs">{new Date(link.createdAt).toLocaleDateString()}</td>
+                  <td className="px-6 py-4 text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <button onClick={() => copyToClipboard(link.trackingUrl, link.id)}
+                        className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-950 border border-slate-800 hover:text-white text-slate-400 hover:bg-slate-800 transition active:scale-90">
+                        {copiedId === link.id ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+                      </button>
+                      <a href={link.trackingUrl} target="_blank" rel="noreferrer"
+                        className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-950 border border-slate-800 hover:text-white text-slate-400 hover:bg-slate-800 transition active:scale-90">
+                        <ExternalLink className="h-4 w-4" />
+                      </a>
                     </div>
                   </td>
                 </tr>
-              ) : (
-                links.map((link) => (
-                  <tr key={link.id} className="hover:bg-slate-850/20 transition-colors">
-                    <td className="px-6 py-4">
-                      <div>
-                        <span className="font-mono bg-slate-950 border border-slate-850 px-2 py-0.5 rounded text-blue-400 text-xs">
-                          {link.uniqueCode}
-                        </span>
-                        <div className="text-slate-500 text-xs mt-1.5 truncate max-w-[250px]" title={link.targetUrl}>
-                          {link.targetUrl}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="uppercase tracking-wider text-xs font-bold text-slate-400">
-                        {link.linkType}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-center font-semibold font-mono text-slate-100">{link.clicks}</td>
-                    <td className="px-6 py-4 text-center font-semibold font-mono text-emerald-400">
-                      {link.conversions}
-                    </td>
-                    <td className="px-6 py-4 font-mono font-medium text-emerald-400">
-                      ${Number(link.earned).toFixed(2)}
-                    </td>
-                    <td className="px-6 py-4 text-slate-400 text-xs">
-                      {new Date(link.createdAt).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => copyToClipboard(link.trackingUrl, link.id)}
-                          className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-950 border border-slate-800 hover:text-white text-slate-400 hover:bg-slate-800 transition active:scale-90"
-                          title="Copy Link"
-                        >
-                          {copiedId === link.id ? (
-                            <Check className="h-4 w-4 text-emerald-400" />
-                          ) : (
-                            <Copy className="h-4 w-4" />
-                          )}
-                        </button>
-                        <a
-                          href={link.trackingUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-950 border border-slate-800 hover:text-white text-slate-400 hover:bg-slate-800 transition active:scale-90"
-                          title="Test Link"
-                        >
-                          <ExternalLink className="h-4 w-4" />
-                        </a>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
+              ))}
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Mobile Cards */}
+      <div className="md:hidden space-y-3">
+        {loading ? (
+          Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="bg-slate-900/40 border border-slate-800 rounded-2xl p-4 animate-pulse">
+              <div className="h-4 bg-slate-800 rounded w-1/2 mb-3" />
+              <div className="h-3 bg-slate-800 rounded w-full mb-2" />
+              <div className="h-8 bg-slate-800 rounded w-full" />
+            </div>
+          ))
+        ) : links.length === 0 ? (
+          <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-8 text-center text-slate-500">
+            <Link2 className="h-8 w-8 text-slate-700 mx-auto mb-2" />
+            No links created yet. Tap &apos;Create Link&apos; to get started.
+          </div>
+        ) : links.map((link) => (
+          <div key={link.id} className="bg-slate-900/40 border border-slate-800 rounded-2xl p-4 space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-mono bg-slate-950 border border-slate-800 px-2 py-0.5 rounded text-blue-400 text-xs">{link.uniqueCode}</span>
+              <span className="uppercase tracking-wider text-xs font-bold text-slate-500">{link.linkType}</span>
+            </div>
+            <p className="text-slate-500 text-xs truncate">{link.targetUrl}</p>
+            <div className="grid grid-cols-3 gap-2">
+              <div className="bg-slate-950/60 rounded-xl p-2.5 text-center border border-slate-800">
+                <div className="flex items-center justify-center gap-1 mb-1">
+                  <MousePointerClick className="h-3 w-3 text-slate-400" />
+                  <span className="text-slate-400 text-xs">Clicks</span>
+                </div>
+                <p className="font-mono font-bold text-white text-sm">{link.clicks}</p>
+              </div>
+              <div className="bg-slate-950/60 rounded-xl p-2.5 text-center border border-slate-800">
+                <div className="flex items-center justify-center gap-1 mb-1">
+                  <TrendingUp className="h-3 w-3 text-emerald-400" />
+                  <span className="text-slate-400 text-xs">Conv.</span>
+                </div>
+                <p className="font-mono font-bold text-emerald-400 text-sm">{link.conversions}</p>
+              </div>
+              <div className="bg-slate-950/60 rounded-xl p-2.5 text-center border border-slate-800">
+                <div className="flex items-center justify-center gap-1 mb-1">
+                  <DollarSign className="h-3 w-3 text-emerald-400" />
+                  <span className="text-slate-400 text-xs">Earned</span>
+                </div>
+                <p className="font-mono font-bold text-emerald-400 text-sm">${Number(link.earned).toFixed(2)}</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <button onClick={() => copyToClipboard(link.trackingUrl, link.id)}
+                className="flex items-center justify-center gap-2 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 hover:text-white text-sm transition active:scale-95">
+                {copiedId === link.id ? <><Check className="h-4 w-4 text-emerald-400" /> Copied!</> : <><Copy className="h-4 w-4" /> Copy Link</>}
+              </button>
+              <a href={link.trackingUrl} target="_blank" rel="noreferrer"
+                className="flex items-center justify-center gap-2 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 hover:text-white text-sm transition active:scale-95">
+                <ExternalLink className="h-4 w-4" /> Test
+              </a>
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Modal Dialog */}
