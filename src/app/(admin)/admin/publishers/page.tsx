@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Users, CheckCircle, XCircle, Search, RefreshCw, AlertCircle } from 'lucide-react'
+import { Users, CheckCircle, XCircle, Search, RefreshCw, AlertCircle, MousePointerClick } from 'lucide-react'
 
 interface Publisher {
   id: string
@@ -11,6 +11,7 @@ interface Publisher {
   walletBalance: string
   isActive: boolean
   createdAt: string
+  totalClicks: number
   _count: {
     trackingLinks: number
     conversions: number
@@ -116,16 +117,17 @@ export default function AdminPublishersPage() {
         </div>
       )}
 
-      {/* Table Container */}
-      <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
+      {/* Desktop Table */}
+      <div className="hidden md:block bg-slate-900/40 backdrop-blur-xl border border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-slate-800 text-slate-400 text-xs font-semibold uppercase tracking-wider bg-slate-900/25">
                 <th className="px-6 py-4">Publisher</th>
                 <th className="px-6 py-4">Balance</th>
-                <th className="px-6 py-4">Links Created</th>
-                <th className="px-6 py-4">Conversions</th>
+                <th className="px-6 py-4 text-center">Links</th>
+                <th className="px-6 py-4 text-center">Total Clicks</th>
+                <th className="px-6 py-4 text-center">Conversions</th>
                 <th className="px-6 py-4">Joined At</th>
                 <th className="px-6 py-4 text-center">Status</th>
                 <th className="px-6 py-4 text-right">Actions</th>
@@ -135,14 +137,14 @@ export default function AdminPublishersPage() {
               {loading ? (
                 Array.from({ length: 3 }).map((_, idx) => (
                   <tr key={idx} className="animate-pulse">
-                    <td className="px-6 py-6" colSpan={7}>
+                    <td className="px-6 py-6" colSpan={8}>
                       <div className="h-5 bg-slate-800/60 rounded w-full" />
                     </td>
                   </tr>
                 ))
               ) : filteredPublishers.length === 0 ? (
                 <tr>
-                  <td className="px-6 py-12 text-center text-slate-500" colSpan={7}>
+                  <td className="px-6 py-12 text-center text-slate-500" colSpan={8}>
                     <div className="flex flex-col items-center justify-center gap-2">
                       <AlertCircle className="h-8 w-8 text-slate-600" />
                       <span>No publishers found</span>
@@ -151,7 +153,7 @@ export default function AdminPublishersPage() {
                 </tr>
               ) : (
                 filteredPublishers.map((pub) => (
-                  <tr key={pub.id} className="hover:bg-slate-850/20 transition-colors">
+                  <tr key={pub.id} className="hover:bg-slate-800/20 transition-colors">
                     <td className="px-6 py-4">
                       <div>
                         <div className="font-semibold text-white">{pub.name}</div>
@@ -162,8 +164,13 @@ export default function AdminPublishersPage() {
                     <td className="px-6 py-4 font-mono font-medium text-slate-100">
                       ₹{Number(pub.walletBalance).toFixed(2)}
                     </td>
-                    <td className="px-6 py-4 font-medium">{pub._count.trackingLinks}</td>
-                    <td className="px-6 py-4 font-medium text-emerald-400">{pub._count.conversions}</td>
+                    <td className="px-6 py-4 text-center font-medium">{pub._count.trackingLinks}</td>
+                    <td className="px-6 py-4 text-center">
+                      <span className="inline-flex items-center gap-1 font-mono font-semibold text-amber-400">
+                        <MousePointerClick className="h-3.5 w-3.5" />{pub.totalClicks}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-center font-medium text-emerald-400">{pub._count.conversions}</td>
                     <td className="px-6 py-4 text-slate-400 text-xs">
                       {new Date(pub.createdAt).toLocaleDateString()}
                     </td>
@@ -209,6 +216,74 @@ export default function AdminPublishersPage() {
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Mobile Cards */}
+      <div className="md:hidden space-y-3">
+        {loading ? (
+          Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="bg-slate-900/40 border border-slate-800 rounded-2xl p-4 animate-pulse">
+              <div className="h-4 bg-slate-800 rounded w-1/2 mb-3" />
+              <div className="h-3 bg-slate-800 rounded w-full mb-2" />
+              <div className="h-8 bg-slate-800 rounded w-full" />
+            </div>
+          ))
+        ) : filteredPublishers.length === 0 ? (
+          <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-8 text-center text-slate-500">
+            <AlertCircle className="h-8 w-8 text-slate-600 mx-auto mb-2" />
+            No publishers found
+          </div>
+        ) : filteredPublishers.map((pub) => (
+          <div key={pub.id} className="bg-slate-900/40 border border-slate-800 rounded-2xl p-4 space-y-3">
+            {/* Name + Status */}
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="font-semibold text-white text-sm">{pub.name}</p>
+                <p className="text-slate-500 text-xs">{pub.email}</p>
+              </div>
+              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border shrink-0 ${
+                pub.isActive
+                  ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400'
+                  : 'bg-red-500/10 border-red-500/25 text-red-400'
+              }`}>
+                {pub.isActive ? <><CheckCircle className="h-3 w-3" /> Active</> : <><XCircle className="h-3 w-3" /> Off</>}
+              </span>
+            </div>
+            {/* Stats grid */}
+            <div className="grid grid-cols-4 gap-2">
+              <div className="bg-slate-950/60 rounded-xl p-2 text-center border border-slate-800">
+                <p className="text-slate-500 text-xs mb-0.5">Balance</p>
+                <p className="font-mono font-bold text-white text-xs">${Number(pub.walletBalance).toFixed(2)}</p>
+              </div>
+              <div className="bg-slate-950/60 rounded-xl p-2 text-center border border-slate-800">
+                <p className="text-slate-500 text-xs mb-0.5">Links</p>
+                <p className="font-bold text-slate-200 text-sm">{pub._count.trackingLinks}</p>
+              </div>
+              <div className="bg-slate-950/60 rounded-xl p-2 text-center border border-slate-800">
+                <p className="text-slate-500 text-xs mb-0.5">Clicks</p>
+                <p className="font-bold text-amber-400 text-sm flex items-center justify-center gap-0.5">
+                  <MousePointerClick className="h-3 w-3" />{pub.totalClicks}
+                </p>
+              </div>
+              <div className="bg-slate-950/60 rounded-xl p-2 text-center border border-slate-800">
+                <p className="text-slate-500 text-xs mb-0.5">Conv.</p>
+                <p className="font-bold text-emerald-400 text-sm">{pub._count.conversions}</p>
+              </div>
+            </div>
+            {/* Action */}
+            <button
+              onClick={() => toggleActiveStatus(pub.id, pub.isActive)}
+              disabled={actionLoadingId === pub.id}
+              className={`w-full py-2 rounded-xl text-xs font-semibold border active:scale-95 transition disabled:opacity-50 ${
+                pub.isActive
+                  ? 'bg-red-500/10 hover:bg-red-500 hover:text-white border-red-500/25 text-red-400'
+                  : 'bg-emerald-500/10 hover:bg-emerald-500 hover:text-white border-emerald-500/25 text-emerald-400'
+              }`}
+            >
+              {actionLoadingId === pub.id ? 'Updating...' : pub.isActive ? 'Deactivate' : 'Activate'}
+            </button>
+          </div>
+        ))}
       </div>
     </div>
   )
