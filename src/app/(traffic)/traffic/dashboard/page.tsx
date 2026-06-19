@@ -126,58 +126,66 @@ export default function TrafficDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Recent Earnings */}
-        <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-800 rounded-3xl p-6 lg:col-span-2 space-y-6">
+        <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-800 rounded-3xl p-6 lg:col-span-2 space-y-4">
           <h3 className="text-lg font-bold text-white flex items-center gap-2">
             <ArrowUpRight className="h-5 w-5 text-teal-500" />
             Recent Earnings
           </h3>
-          <div className="overflow-x-auto">
+
+          {/* Desktop Table */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-slate-800 text-slate-400 text-xs font-semibold uppercase tracking-wider bg-slate-900/25">
+                <tr className="border-b border-slate-800 text-slate-400 text-xs font-semibold uppercase tracking-wider">
                   <th className="px-4 py-3">External UID</th>
                   <th className="px-4 py-3">Link Code</th>
                   <th className="px-4 py-3">Reward</th>
                   <th className="px-4 py-3">Date</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-850 text-slate-300 text-sm">
+              <tbody className="divide-y divide-slate-800/50 text-slate-300 text-sm">
                 {loading ? (
-                  Array.from({ length: 3 }).map((_, idx) => (
-                    <tr key={idx} className="animate-pulse">
-                      <td className="px-4 py-4" colSpan={4}>
-                        <div className="h-4 bg-slate-800/60 rounded w-full" />
-                      </td>
+                  Array.from({ length: 3 }).map((_, i) => (
+                    <tr key={i} className="animate-pulse">
+                      <td className="px-4 py-4" colSpan={4}><div className="h-4 bg-slate-800/60 rounded w-full" /></td>
                     </tr>
                   ))
                 ) : !data || data.recentEarnings.length === 0 ? (
-                  <tr>
-                    <td className="px-4 py-8 text-center text-slate-500" colSpan={4}>
-                      No earnings recorded yet.
+                  <tr><td className="px-4 py-8 text-center text-slate-500" colSpan={4}>No earnings recorded yet.</td></tr>
+                ) : data.recentEarnings.map((e) => (
+                  <tr key={e.id} className="hover:bg-slate-800/20 transition-colors">
+                    <td className="px-4 py-3 font-mono text-xs text-slate-400">{e.externalUserId}</td>
+                    <td className="px-4 py-3">
+                      <span className="font-mono bg-slate-950 px-2 py-0.5 rounded border border-slate-800 text-teal-400 text-xs">{e.trafficLink.uniqueCode}</span>
                     </td>
+                    <td className="px-4 py-3 font-medium text-emerald-400">${Number(e.amount).toFixed(2)}</td>
+                    <td className="px-4 py-3 text-slate-400 text-xs">{new Date(e.createdAt).toLocaleDateString()}</td>
                   </tr>
-                ) : (
-                  data.recentEarnings.map((e) => (
-                    <tr key={e.id} className="hover:bg-slate-850/10 transition-colors">
-                      <td className="px-4 py-3 font-mono text-xs text-slate-400">
-                        {e.externalUserId}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="font-mono bg-slate-950 px-2 py-0.5 rounded border border-slate-850 text-teal-400">
-                          {e.trafficLink.uniqueCode}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 font-medium text-emerald-400">
-                        ${Number(e.amount).toFixed(2)}
-                      </td>
-                      <td className="px-4 py-3 text-slate-400 text-xs">
-                        {new Date(e.createdAt).toLocaleDateString()} {new Date(e.createdAt).toLocaleTimeString()}
-                      </td>
-                    </tr>
-                  ))
-                )}
+                ))}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile Cards */}
+          <div className="md:hidden space-y-2">
+            {loading ? (
+              Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="h-16 bg-slate-800/50 animate-pulse rounded-xl" />
+              ))
+            ) : !data || data.recentEarnings.length === 0 ? (
+              <p className="text-center text-slate-500 py-6 text-sm">No earnings recorded yet.</p>
+            ) : data.recentEarnings.map((e) => (
+              <div key={e.id} className="bg-slate-950/60 border border-slate-800 rounded-xl p-3 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-mono bg-slate-900 border border-slate-800 px-2 py-0.5 rounded text-teal-400 text-xs">{e.trafficLink.uniqueCode}</span>
+                    <span className="font-mono font-bold text-emerald-400 text-sm">${Number(e.amount).toFixed(2)}</span>
+                  </div>
+                  <p className="font-mono text-xs text-slate-500 truncate">{e.externalUserId}</p>
+                </div>
+                <span className="text-slate-600 text-xs shrink-0">{new Date(e.createdAt).toLocaleDateString()}</span>
+              </div>
+            ))}
           </div>
         </div>
 

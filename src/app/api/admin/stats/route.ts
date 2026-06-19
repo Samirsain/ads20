@@ -66,6 +66,8 @@ export async function GET(request: NextRequest) {
       data: {
         totalPublishers,
         totalTrafficUsers,
+        pubClicks: pubLinksAggregate._sum.clicks ?? 0,
+        trafficClicks: trafficLinksAggregate._sum.totalClicks ?? 0,
         totalClicks,
         totalConversions,
         totalPubEarned,

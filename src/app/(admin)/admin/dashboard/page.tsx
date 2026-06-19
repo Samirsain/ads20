@@ -15,6 +15,8 @@ import {
 interface Stats {
   totalPublishers: number
   totalTrafficUsers: number
+  pubClicks: number
+  trafficClicks: number
   totalClicks: number
   totalConversions: number
   totalPubEarned: number
@@ -74,9 +76,9 @@ export default function AdminDashboard() {
       )}
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
         <StatCard
-          title="Total Publishers"
+          title="Publishers"
           value={stats?.totalPublishers ?? 0}
           icon={Users}
           description="Registered publishers"
@@ -85,7 +87,7 @@ export default function AdminDashboard() {
           loading={loading}
         />
         <StatCard
-          title="Total Traffic Users"
+          title="Traffic Users"
           value={stats?.totalTrafficUsers ?? 0}
           icon={Users}
           description="Traffic portal users"
@@ -94,12 +96,21 @@ export default function AdminDashboard() {
           loading={loading}
         />
         <StatCard
-          title="Total Clicks"
-          value={stats?.totalClicks ?? 0}
+          title="Publisher Clicks"
+          value={stats?.pubClicks ?? 0}
           icon={MousePointerClick}
-          description="Combined tracking link clicks"
+          description="From publisher tracking links"
           gradient="from-amber-600/20 to-orange-600/5"
           border="border-amber-500/20"
+          loading={loading}
+        />
+        <StatCard
+          title="Traffic Clicks"
+          value={stats?.trafficClicks ?? 0}
+          icon={MousePointerClick}
+          description="From traffic user links"
+          gradient="from-cyan-600/20 to-sky-600/5"
+          border="border-cyan-500/20"
           loading={loading}
         />
         <StatCard
@@ -115,7 +126,7 @@ export default function AdminDashboard() {
           title="Publisher Payouts"
           value={`$${Number(stats?.totalPubEarned ?? 0).toFixed(2)}`}
           icon={TrendingUp}
-          description="Earned by publishers ($0.05 / conversion)"
+          description="$0.05 per conversion"
           gradient="from-sky-600/20 to-blue-600/5"
           border="border-sky-500/20"
           loading={loading}
@@ -124,7 +135,7 @@ export default function AdminDashboard() {
           title="Traffic Payouts"
           value={`$${Number(stats?.totalTrafficEarned ?? 0).toFixed(2)}`}
           icon={TrendingUp}
-          description="Earned by traffic users ($3.00 / conversion)"
+          description="$3.00 per conversion"
           gradient="from-emerald-600/20 to-green-600/5"
           border="border-emerald-500/20"
           loading={loading}
@@ -138,15 +149,24 @@ export default function AdminDashboard() {
           border="border-red-500/20"
           loading={loading}
         />
-        <StatCard
-          title="Total Paid Out"
-          value={`$${Number(stats?.totalPaid ?? 0).toFixed(2)}`}
-          icon={Wallet}
-          description="Processed payout requests"
-          gradient="from-violet-600/20 to-purple-600/5"
-          border="border-violet-500/20"
-          loading={loading}
-        />
+      </div>
+
+      {/* Total Paid Banner */}
+      <div className="bg-slate-900/40 backdrop-blur-xl border border-violet-500/20 rounded-2xl p-4 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 bg-violet-500/10 border border-violet-500/20 rounded-xl">
+            <Wallet className="h-5 w-5 text-violet-400" />
+          </div>
+          <div>
+            <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider">Total Paid Out</p>
+            <p className="text-slate-500 text-xs mt-0.5">Processed payout requests (all time)</p>
+          </div>
+        </div>
+        {loading ? (
+          <div className="h-8 w-28 bg-slate-800/80 rounded-lg animate-pulse" />
+        ) : (
+          <span className="text-2xl font-bold text-white font-mono">${Number(stats?.totalPaid ?? 0).toFixed(2)}</span>
+        )}
       </div>
 
       {/* Platform Info */}
