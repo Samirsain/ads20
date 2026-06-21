@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { amount, upiId } = result.data
+    const { amount, walletAddress, network } = result.data
 
     // 1. Fetch min withdrawal from GlobalConfig
     const minWithdrawConfig = await prisma.globalConfig.findUnique({
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
 
     if (amount < minWithdrawal) {
       return NextResponse.json(
-        { success: false, error: `Minimum withdrawal amount is ₹${minWithdrawal}` },
+        { success: false, error: `Minimum withdrawal amount is $${minWithdrawal}` },
         { status: 400 }
       )
     }
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
     const balance = Number(userData.walletBalance)
     if (balance < amount) {
       return NextResponse.json(
-        { success: false, error: `Insufficient balance. Available: ₹${balance.toFixed(2)}` },
+        { success: false, error: `Insufficient balance. Available: $${balance.toFixed(2)}` },
         { status: 400 }
       )
     }
@@ -73,7 +73,8 @@ export async function POST(request: NextRequest) {
         data: {
           userId: user.userId,
           amount,
-          upiId,
+          walletAddress,
+          network,
           status: 'PENDING',
         },
       })

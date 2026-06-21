@@ -44,8 +44,9 @@ export const createTrafficLinkSchema = z.object({
 // ─── Withdrawal ───────────────────────────────────────────────────────────────
 
 export const withdrawalSchema = z.object({
-  amount: z.number().positive('Amount must be positive').min(10, 'Minimum withdrawal is ₹10'),
-  upiId: z.string().min(5, 'Invalid UPI ID').max(50),
+  amount: z.number().positive('Amount must be positive').min(10, 'Minimum withdrawal is $10'),
+  walletAddress: z.string().min(10, 'Invalid wallet address').max(100, 'Wallet address too long'),
+  network: z.enum(['TRC20', 'ERC20', 'BEP20'], { errorMap: () => ({ message: 'Invalid network' }) }),
 })
 
 // ─── Postback ─────────────────────────────────────────────────────────────────
