@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     const limit = parsed.success ? parsed.data.limit : 20
     const skip = (page - 1) * limit
 
-    const [publishers, total] = await Promise.all([
+    const [publishers, total, clicksData] = await Promise.all([
       prisma.publisher.findMany({
         orderBy: { createdAt: 'desc' },
         skip,
@@ -44,12 +44,25 @@ export async function GET(request: NextRequest) {
         },
       }),
       prisma.publisher.count(),
+      prisma.trackingLink.groupBy({
+        by: ['publisherId'],
+        _sum: { clicks: true },
+      }),
     ])
+
+    const clicksMap = Object.fromEntries(
+      clicksData.map((row) => [row.publisherId, row._sum.clicks ?? 0])
+    )
+
+    const publishersWithClicks = publishers.map((pub) => ({
+      ...pub,
+      totalClicks: clicksMap[pub.id] ?? 0,
+    }))
 
     return NextResponse.json({
       success: true,
       data: {
-        publishers,
+        publishers: publishersWithClicks,
         pagination: { page, limit, total, pages: Math.ceil(total / limit) },
       },
     })

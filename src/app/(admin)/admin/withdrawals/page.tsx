@@ -6,7 +6,8 @@ import { Wallet, Check, X, RefreshCw, AlertCircle } from 'lucide-react'
 interface Withdrawal {
   id: string
   amount: string
-  upiId: string
+  walletAddress: string
+  network: string
   status: string
   note: string | null
   requestedAt: string
@@ -129,7 +130,7 @@ export default function AdminWithdrawalsPage() {
               <tr className="border-b border-slate-800 text-slate-400 text-xs font-semibold uppercase tracking-wider bg-slate-900/25">
                 <th className="px-6 py-4">Requestor</th>
                 <th className="px-6 py-4">Amount</th>
-                <th className="px-6 py-4">UPI ID</th>
+                <th className="px-6 py-4">Wallet Address</th>
                 <th className="px-6 py-4">Requested At</th>
                 <th className="px-6 py-4">Status</th>
                 <th className="px-6 py-4">Note</th>
@@ -168,9 +169,14 @@ export default function AdminWithdrawalsPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 font-mono font-medium text-slate-100">
-                        ${Number(w.amount).toFixed(2)}
+                        ${Number(w.amount).toFixed(2)} USDT
                       </td>
-                      <td className="px-6 py-4 font-mono text-xs">{w.upiId}</td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300">{w.network}</span>
+                          <span className="font-mono text-xs text-slate-400 truncate max-w-[140px]">{w.walletAddress}</span>
+                        </div>
+                      </td>
                       <td className="px-6 py-4 text-slate-400 text-xs">
                         {new Date(w.requestedAt).toLocaleString()}
                       </td>

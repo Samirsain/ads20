@@ -56,15 +56,16 @@ model Conversion {
 }
 
 model PubWithdrawal {
-  id          String    @id @default(cuid())
-  publisherId String
-  publisher   Publisher @relation(fields: [publisherId], references: [id])
-  amount      Decimal   @db.Decimal(10, 2)
-  upiId       String
-  status      String    @default("PENDING")
-  note        String?
-  requestedAt DateTime  @default(now())
-  processedAt DateTime?
+  id            String    @id @default(cuid())
+  publisherId   String
+  publisher     Publisher @relation(fields: [publisherId], references: [id])
+  amount        Decimal   @db.Decimal(10, 2)
+  walletAddress String
+  network       String    @default("TRC20")
+  status        String    @default("PENDING")
+  note          String?
+  requestedAt   DateTime  @default(now())
+  processedAt   DateTime?
 }
 
 model TrafficUser {
@@ -122,15 +123,16 @@ model TrafficEarning {
 }
 
 model TrafficWithdrawal {
-  id          String      @id @default(cuid())
-  userId      String
-  user        TrafficUser @relation(fields: [userId], references: [id])
-  amount      Decimal     @db.Decimal(10, 2)
-  upiId       String
-  status      String      @default("PENDING")
-  note        String?
-  requestedAt DateTime    @default(now())
-  processedAt DateTime?
+  id            String      @id @default(cuid())
+  userId        String
+  user          TrafficUser @relation(fields: [userId], references: [id])
+  amount        Decimal     @db.Decimal(10, 2)
+  walletAddress String
+  network       String      @default("TRC20")
+  status        String      @default("PENDING")
+  note          String?
+  requestedAt   DateTime    @default(now())
+  processedAt   DateTime?
 }
 
 model GlobalConfig {

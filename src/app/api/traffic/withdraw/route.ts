@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { amount, upiId } = result.data
+    const { amount, walletAddress, network } = result.data
 
     // 1. Fetch min withdrawal from GlobalConfig
     const minWithdrawConfig = await prisma.globalConfig.findUnique({
@@ -73,7 +73,8 @@ export async function POST(request: NextRequest) {
         data: {
           userId: user.userId,
           amount,
-          upiId,
+          walletAddress,
+          network,
           status: 'PENDING',
         },
       })
