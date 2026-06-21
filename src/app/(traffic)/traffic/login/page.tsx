@@ -39,54 +39,54 @@ export default function TrafficLoginPage() {
   }
 
   return (
-    <div className="flex min-h-[calc(100vh-2rem)] items-center justify-center relative overflow-hidden -m-4 md:-m-8">
+    <div className="flex min-h-[calc(100vh-2rem)] items-center justify-center relative overflow-hidden -m-4 md:-m-8 bg-gradient-to-br from-slate-50 to-emerald-50">
       {/* Decorative Orbs */}
       <div className="absolute top-1/4 left-1/4 h-[300px] w-[300px] rounded-full bg-teal-600/10 blur-[100px] pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/4 h-[350px] w-[350px] rounded-full bg-emerald-600/10 blur-[120px] pointer-events-none" />
 
-      <div className="w-full max-w-md bg-slate-900/40 backdrop-blur-xl border border-slate-800 rounded-3xl p-8 shadow-2xl relative z-10">
+      <div className="w-full max-w-md bg-white border border-slate-200 rounded-3xl p-8 shadow-sm relative z-10">
         <div className="flex flex-col items-center mb-8">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-tr from-teal-500 to-emerald-600 shadow-lg shadow-teal-500/20 mb-3">
             <Target className="h-6 w-6 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Traffic Login</h1>
-          <p className="text-slate-400 text-sm mt-1">Sign in to drive traffic and earn</p>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Traffic Login</h1>
+          <p className="text-slate-500 text-sm mt-1">Sign in to drive traffic and earn</p>
         </div>
 
         {error && (
-          <div className="mb-6 p-4 rounded-xl bg-red-950/30 border border-red-800/50 text-red-400 text-sm">
+          <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
             {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">Email Address</label>
+            <label className="block text-sm font-medium text-slate-700 mb-2">Email Address</label>
             <input
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-slate-950/60 border border-slate-800 focus:border-teal-500 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-teal-500 transition"
+              className="w-full bg-white border border-slate-300 focus:border-teal-500 rounded-xl px-4 py-3 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-teal-500 transition"
               placeholder="traffic@example.com"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">Password</label>
+            <label className="block text-sm font-medium text-slate-700 mb-2">Password</label>
             <div className="relative">
               <input
                 type={showPassword ? 'text' : 'password'}
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-slate-950/60 border border-slate-800 focus:border-teal-500 rounded-xl px-4 py-3 pr-11 text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-teal-500 transition"
+                className="w-full bg-white border border-slate-300 focus:border-teal-500 rounded-xl px-4 py-3 pr-11 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-teal-500 transition"
                 placeholder="••••••••"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition"
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition"
               >
                 {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
               </button>
@@ -109,9 +109,9 @@ export default function TrafficLoginPage() {
           </button>
         </form>
 
-        <div className="mt-8 text-center text-sm text-slate-400">
+        <div className="mt-8 text-center text-sm text-slate-500">
           Don&apos;t have an account?{' '}
-          <Link href="/traffic/register" className="text-teal-400 hover:underline font-semibold">
+          <Link href="/traffic/register" className="text-teal-600 hover:underline font-semibold">
             Register Here
           </Link>
         </div>

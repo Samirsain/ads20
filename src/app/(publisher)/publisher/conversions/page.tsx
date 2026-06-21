@@ -48,16 +48,16 @@ export default function PublisherConversionsPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-white tracking-tight flex items-center gap-2">
-            <ArrowRightLeft className="h-8 w-8 text-blue-500" />
+          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+            <ArrowRightLeft className="h-8 w-8 text-blue-600" />
             Conversion Logs
           </h1>
-          <p className="text-slate-400 mt-1">Audit log of all registrations tracked via your publisher referral codes</p>
+          <p className="text-slate-500 mt-1">Audit log of all registrations tracked via your publisher referral codes</p>
         </div>
         <button
           onClick={() => fetchConversions(page)}
           disabled={loading}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800 active:scale-95 transition disabled:opacity-50 text-sm font-semibold"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-700 hover:text-slate-900 hover:bg-slate-100 active:scale-95 transition disabled:opacity-50 text-sm font-semibold"
         >
           <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           Refresh
@@ -65,17 +65,17 @@ export default function PublisherConversionsPage() {
       </div>
 
       {error && (
-        <div className="p-4 rounded-xl bg-red-950/30 border border-red-800/50 text-red-400 text-sm">
+        <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
           {error}
         </div>
       )}
 
       {/* Conversions Table */}
-      <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
+      <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-slate-800 text-slate-400 text-xs font-semibold uppercase tracking-wider bg-slate-900/25">
+              <tr className="border-b border-slate-200 text-slate-500 text-xs font-semibold uppercase tracking-wider bg-slate-50">
                 <th className="px-6 py-4">Conversion ID / External UID</th>
                 <th className="px-6 py-4">Tracking Link</th>
                 <th className="px-6 py-4">Status</th>
@@ -83,49 +83,49 @@ export default function PublisherConversionsPage() {
                 <th className="px-6 py-4">Converted At</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-850 text-slate-300 text-sm">
+            <tbody className="divide-y divide-slate-200 text-slate-700 text-sm">
               {loading ? (
                 Array.from({ length: 3 }).map((_, idx) => (
                   <tr key={idx} className="animate-pulse">
                     <td className="px-6 py-6" colSpan={5}>
-                      <div className="h-5 bg-slate-800/60 rounded w-full" />
+                      <div className="h-5 bg-slate-200 rounded w-full" />
                     </td>
                   </tr>
                 ))
               ) : conversions.length === 0 ? (
                 <tr>
-                  <td className="px-6 py-12 text-center text-slate-500" colSpan={5}>
+                  <td className="px-6 py-12 text-center text-slate-400" colSpan={5}>
                     <div className="flex flex-col items-center justify-center gap-2">
-                      <ArrowRightLeft className="h-8 w-8 text-slate-700" />
+                      <ArrowRightLeft className="h-8 w-8 text-slate-400" />
                       <span>No conversions logged yet. Send traffic to your links to generate payouts.</span>
                     </div>
                   </td>
                 </tr>
               ) : (
                 conversions.map((c) => (
-                  <tr key={c.id} className="hover:bg-slate-850/20 transition-colors">
-                    <td className="px-6 py-4 font-mono text-xs text-slate-400">
+                  <tr key={c.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-6 py-4 font-mono text-xs text-slate-500">
                       {c.externalUserId}
                     </td>
                     <td className="px-6 py-4">
                       <div>
-                        <span className="font-mono bg-slate-950 border border-slate-850 px-2 py-0.5 rounded text-blue-400 text-xs">
+                        <span className="font-mono bg-slate-100 border border-slate-200 px-2 py-0.5 rounded text-blue-600 text-xs">
                           {c.trackingLink.uniqueCode}
                         </span>
-                        <div className="text-slate-500 text-xs mt-1.5 truncate max-w-[200px]" title={c.trackingLink.targetUrl}>
+                        <div className="text-slate-400 text-xs mt-1.5 truncate max-w-[200px]" title={c.trackingLink.targetUrl}>
                           {c.trackingLink.targetUrl}
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 border border-emerald-200 text-emerald-700">
                         {c.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 font-mono font-bold text-emerald-400">
+                    <td className="px-6 py-4 font-mono font-bold text-emerald-600">
                       +${Number(c.amount).toFixed(2)}
                     </td>
-                    <td className="px-6 py-4 text-slate-400 text-xs">
+                    <td className="px-6 py-4 text-slate-500 text-xs">
                       {new Date(c.createdAt).toLocaleString()}
                     </td>
                   </tr>
@@ -137,22 +137,22 @@ export default function PublisherConversionsPage() {
 
         {/* Pagination Controls */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-between border-t border-slate-800 px-6 py-4 bg-slate-900/10">
-            <span className="text-slate-400 text-xs">
+          <div className="flex items-center justify-between border-t border-slate-200 px-6 py-4 bg-slate-50">
+            <span className="text-slate-500 text-xs">
               Page {page} of {totalPages}
             </span>
             <div className="flex items-center gap-2">
               <button
                 disabled={page <= 1 || loading}
                 onClick={() => fetchConversions(page - 1)}
-                className="p-1.5 bg-slate-950 border border-slate-800 rounded-lg hover:text-white text-slate-400 disabled:opacity-50 transition active:scale-95"
+                className="p-1.5 bg-white border border-slate-200 rounded-lg hover:text-slate-900 text-slate-400 disabled:opacity-50 transition active:scale-95"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
               <button
                 disabled={page >= totalPages || loading}
                 onClick={() => fetchConversions(page + 1)}
-                className="p-1.5 bg-slate-950 border border-slate-800 rounded-lg hover:text-white text-slate-400 disabled:opacity-50 transition active:scale-95"
+                className="p-1.5 bg-white border border-slate-200 rounded-lg hover:text-slate-900 text-slate-400 disabled:opacity-50 transition active:scale-95"
               >
                 <ChevronRight className="h-4 w-4" />
               </button>

@@ -143,7 +143,7 @@ export default function HowItWorks() {
                 <span className="text-xs font-normal text-blue-700 uppercase tracking-wider block mb-1">
                   💡 Publisher Tip
                 </span>
-                <span className="text-xs text-zinc-650 leading-relaxed font-normal">
+                <span className="text-xs text-zinc-600 leading-relaxed font-normal">
                   {activeStep === 0 && "Sign up ke baad billing settings me jaakar USDT or Bank methods verify karayein."}
                   {activeStep === 1 && "Har traffic source ke liye separate links banayein taaki accurate analytics filter ho sake."}
                   {activeStep === 2 && "Aap ek saath multiple links active rakh sakte hain. Groups and channel feed ke pin section me links embed karein."}

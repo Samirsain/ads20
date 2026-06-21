@@ -59,7 +59,7 @@ export default function Features() {
           <h2 className="mt-4 text-3xl font-normal tracking-tight text-zinc-900 sm:text-4xl">
             Smarter Monetization, Faster Payouts
           </h2>
-          <p className="mt-4 text-lg text-zinc-650 font-normal">
+          <p className="mt-4 text-lg text-zinc-600 font-normal">
             Ads2Pub aapke traffic ko optimization technology se analyze karta hai aur campaigns se connect karta hai.
           </p>
         </div>

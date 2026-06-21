@@ -87,17 +87,17 @@ export default function TrafficLinksPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-white tracking-tight flex items-center gap-2">
+          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
             <Link2 className="h-8 w-8 text-teal-500" />
             Traffic Links
           </h1>
-          <p className="text-slate-400 mt-1">Manage URLs you are sending traffic to and monitor clicks</p>
+          <p className="text-slate-500 mt-1">Manage URLs you are sending traffic to and monitor clicks</p>
         </div>
         <div className="flex items-center gap-3">
           <button
             onClick={fetchLinks}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800 active:scale-95 transition disabled:opacity-50 text-sm font-semibold"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-700 hover:text-slate-900 hover:bg-slate-100 active:scale-95 transition disabled:opacity-50 text-sm font-semibold"
           >
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             Refresh
@@ -117,17 +117,17 @@ export default function TrafficLinksPage() {
       </div>
 
       {error && (
-        <div className="p-4 rounded-xl bg-red-950/30 border border-red-800/50 text-red-400 text-sm">
+        <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
           {error}
         </div>
       )}
 
       {/* Desktop Table */}
-      <div className="hidden md:block bg-slate-900/40 backdrop-blur-xl border border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
+      <div className="hidden md:block bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-slate-800 text-slate-400 text-xs font-semibold uppercase tracking-wider bg-slate-900/25">
+              <tr className="border-b border-slate-200 text-slate-500 text-xs font-semibold uppercase tracking-wider bg-slate-50">
                 <th className="px-6 py-4">Link Code / Target</th>
                 <th className="px-6 py-4 text-center">Total Clicks</th>
                 <th className="px-6 py-4 text-center">Unique Clicks</th>
@@ -136,38 +136,38 @@ export default function TrafficLinksPage() {
                 <th className="px-6 py-4 text-right">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/50 text-slate-300 text-sm">
+            <tbody className="divide-y divide-slate-200 text-slate-700 text-sm">
               {loading ? (
                 Array.from({ length: 3 }).map((_, i) => (
                   <tr key={i} className="animate-pulse">
-                    <td className="px-6 py-6" colSpan={6}><div className="h-5 bg-slate-800/60 rounded w-full" /></td>
+                    <td className="px-6 py-6" colSpan={6}><div className="h-5 bg-slate-200 rounded w-full" /></td>
                   </tr>
                 ))
               ) : links.length === 0 ? (
                 <tr>
-                  <td className="px-6 py-12 text-center text-slate-500" colSpan={6}>
-                    <Link2 className="h-8 w-8 text-slate-700 mx-auto mb-2" />
+                  <td className="px-6 py-12 text-center text-slate-400" colSpan={6}>
+                    <Link2 className="h-8 w-8 text-slate-400 mx-auto mb-2" />
                     No links created yet. Click &apos;Create Link&apos; to get started.
                   </td>
                 </tr>
               ) : links.map((link) => (
-                <tr key={link.id} className="hover:bg-slate-800/20 transition-colors">
+                <tr key={link.id} className="hover:bg-slate-50 transition-colors">
                   <td className="px-6 py-4">
-                    <span className="font-mono bg-slate-950 border border-slate-800 px-2 py-0.5 rounded text-teal-400 text-xs">{link.uniqueCode}</span>
-                    <div className="text-slate-500 text-xs mt-1.5 truncate max-w-[220px]" title={link.targetUrl}>{link.targetUrl}</div>
+                    <span className="font-mono bg-slate-100 border border-slate-200 px-2 py-0.5 rounded text-teal-600 text-xs">{link.uniqueCode}</span>
+                    <div className="text-slate-400 text-xs mt-1.5 truncate max-w-[220px]" title={link.targetUrl}>{link.targetUrl}</div>
                   </td>
-                  <td className="px-6 py-4 text-center font-semibold font-mono text-slate-100">{link.totalClicks}</td>
-                  <td className="px-6 py-4 text-center font-semibold font-mono text-blue-400">{link.uniqueClicks}</td>
-                  <td className="px-6 py-4 text-center font-semibold font-mono text-emerald-400">{link.conversions}</td>
-                  <td className="px-6 py-4 font-mono font-medium text-emerald-400">${Number(link.earned).toFixed(2)}</td>
+                  <td className="px-6 py-4 text-center font-semibold font-mono text-slate-800">{link.totalClicks}</td>
+                  <td className="px-6 py-4 text-center font-semibold font-mono text-blue-600">{link.uniqueClicks}</td>
+                  <td className="px-6 py-4 text-center font-semibold font-mono text-emerald-600">{link.conversions}</td>
+                  <td className="px-6 py-4 font-mono font-medium text-emerald-600">${Number(link.earned).toFixed(2)}</td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">
                       <button onClick={() => copyToClipboard(link.trackingUrl, link.id)}
-                        className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-950 border border-slate-800 hover:text-white text-slate-400 hover:bg-slate-800 transition active:scale-90">
-                        {copiedId === link.id ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+                        className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-50 border border-slate-200 hover:text-slate-900 text-slate-500 hover:bg-slate-100 transition active:scale-90">
+                        {copiedId === link.id ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
                       </button>
                       <a href={link.trackingUrl} target="_blank" rel="noreferrer"
-                        className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-950 border border-slate-800 hover:text-white text-slate-400 hover:bg-slate-800 transition active:scale-90">
+                        className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-50 border border-slate-200 hover:text-slate-900 text-slate-500 hover:bg-slate-100 transition active:scale-90">
                         <ExternalLink className="h-4 w-4" />
                       </a>
                     </div>
@@ -183,61 +183,61 @@ export default function TrafficLinksPage() {
       <div className="md:hidden space-y-3">
         {loading ? (
           Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="bg-slate-900/40 border border-slate-800 rounded-2xl p-4 animate-pulse">
-              <div className="h-4 bg-slate-800 rounded w-1/2 mb-3" />
-              <div className="h-3 bg-slate-800 rounded w-full mb-2" />
-              <div className="h-8 bg-slate-800 rounded w-full" />
+            <div key={i} className="bg-white border border-slate-200 rounded-2xl p-4 animate-pulse">
+              <div className="h-4 bg-slate-200 rounded w-1/2 mb-3" />
+              <div className="h-3 bg-slate-200 rounded w-full mb-2" />
+              <div className="h-8 bg-slate-200 rounded w-full" />
             </div>
           ))
         ) : links.length === 0 ? (
-          <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-8 text-center text-slate-500">
-            <Link2 className="h-8 w-8 text-slate-700 mx-auto mb-2" />
+          <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center text-slate-400">
+            <Link2 className="h-8 w-8 text-slate-400 mx-auto mb-2" />
             No links created yet. Tap &apos;Create Link&apos; to get started.
           </div>
         ) : links.map((link) => (
-          <div key={link.id} className="bg-slate-900/40 border border-slate-800 rounded-2xl p-4 space-y-3">
+          <div key={link.id} className="bg-white border border-slate-200 rounded-2xl p-4 space-y-3">
             <div className="flex items-center justify-between gap-2">
-              <span className="font-mono bg-slate-950 border border-slate-800 px-2 py-0.5 rounded text-teal-400 text-xs">{link.uniqueCode}</span>
-              <span className="text-slate-500 text-xs">{new Date(link.createdAt).toLocaleDateString()}</span>
+              <span className="font-mono bg-slate-100 border border-slate-200 px-2 py-0.5 rounded text-teal-600 text-xs">{link.uniqueCode}</span>
+              <span className="text-slate-400 text-xs">{new Date(link.createdAt).toLocaleDateString()}</span>
             </div>
-            <p className="text-slate-500 text-xs truncate">{link.targetUrl}</p>
+            <p className="text-slate-400 text-xs truncate">{link.targetUrl}</p>
             <div className="grid grid-cols-2 gap-2">
-              <div className="bg-slate-950/60 rounded-xl p-2.5 border border-slate-800">
+              <div className="bg-slate-50 rounded-xl p-2.5 border border-slate-200">
                 <div className="flex items-center gap-1 mb-1">
-                  <MousePointerClick className="h-3 w-3 text-slate-400" />
-                  <span className="text-slate-400 text-xs">Total Clicks</span>
+                  <MousePointerClick className="h-3 w-3 text-slate-500" />
+                  <span className="text-slate-500 text-xs">Total Clicks</span>
                 </div>
-                <p className="font-mono font-bold text-white text-sm">{link.totalClicks}</p>
+                <p className="font-mono font-bold text-slate-900 text-sm">{link.totalClicks}</p>
               </div>
-              <div className="bg-slate-950/60 rounded-xl p-2.5 border border-slate-800">
+              <div className="bg-slate-50 rounded-xl p-2.5 border border-slate-200">
                 <div className="flex items-center gap-1 mb-1">
-                  <Users className="h-3 w-3 text-blue-400" />
-                  <span className="text-slate-400 text-xs">Unique Clicks</span>
+                  <Users className="h-3 w-3 text-blue-600" />
+                  <span className="text-slate-500 text-xs">Unique Clicks</span>
                 </div>
-                <p className="font-mono font-bold text-blue-400 text-sm">{link.uniqueClicks}</p>
+                <p className="font-mono font-bold text-blue-600 text-sm">{link.uniqueClicks}</p>
               </div>
-              <div className="bg-slate-950/60 rounded-xl p-2.5 border border-slate-800">
+              <div className="bg-slate-50 rounded-xl p-2.5 border border-slate-200">
                 <div className="flex items-center gap-1 mb-1">
-                  <TrendingUp className="h-3 w-3 text-emerald-400" />
-                  <span className="text-slate-400 text-xs">Conversions</span>
+                  <TrendingUp className="h-3 w-3 text-emerald-600" />
+                  <span className="text-slate-500 text-xs">Conversions</span>
                 </div>
-                <p className="font-mono font-bold text-emerald-400 text-sm">{link.conversions}</p>
+                <p className="font-mono font-bold text-emerald-600 text-sm">{link.conversions}</p>
               </div>
-              <div className="bg-slate-950/60 rounded-xl p-2.5 border border-slate-800">
+              <div className="bg-slate-50 rounded-xl p-2.5 border border-slate-200">
                 <div className="flex items-center gap-1 mb-1">
-                  <DollarSign className="h-3 w-3 text-emerald-400" />
-                  <span className="text-slate-400 text-xs">Earned</span>
+                  <DollarSign className="h-3 w-3 text-emerald-600" />
+                  <span className="text-slate-500 text-xs">Earned</span>
                 </div>
-                <p className="font-mono font-bold text-emerald-400 text-sm">${Number(link.earned).toFixed(2)}</p>
+                <p className="font-mono font-bold text-emerald-600 text-sm">${Number(link.earned).toFixed(2)}</p>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <button onClick={() => copyToClipboard(link.trackingUrl, link.id)}
-                className="flex items-center justify-center gap-2 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 hover:text-white text-sm transition active:scale-95">
-                {copiedId === link.id ? <><Check className="h-4 w-4 text-emerald-400" /> Copied!</> : <><Copy className="h-4 w-4" /> Copy Link</>}
+                className="flex items-center justify-center gap-2 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 hover:text-slate-900 text-sm transition active:scale-95">
+                {copiedId === link.id ? <><Check className="h-4 w-4 text-emerald-600" /> Copied!</> : <><Copy className="h-4 w-4" /> Copy Link</>}
               </button>
               <a href={link.trackingUrl} target="_blank" rel="noreferrer"
-                className="flex items-center justify-center gap-2 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 hover:text-white text-sm transition active:scale-95">
+                className="flex items-center justify-center gap-2 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 hover:text-slate-900 text-sm transition active:scale-95">
                 <ExternalLink className="h-4 w-4" /> Test
               </a>
             </div>
@@ -250,12 +250,12 @@ export default function TrafficLinksPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setModalOpen(false)} />
 
-          <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl relative z-10 space-y-6">
+          <div className="w-full max-w-md bg-white border border-slate-200 rounded-3xl p-6 shadow-sm relative z-10 space-y-6">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-bold text-white">Generate Tracking Link</h3>
+              <h3 className="text-lg font-bold text-slate-900">Generate Tracking Link</h3>
               <button
                 onClick={() => setModalOpen(false)}
-                className="text-slate-400 hover:text-white hover:bg-slate-800 p-1.5 rounded-lg transition"
+                className="text-slate-500 hover:text-slate-900 hover:bg-slate-100 p-1.5 rounded-lg transition"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -263,28 +263,28 @@ export default function TrafficLinksPage() {
 
             {createdLink ? (
               <div className="space-y-4">
-                <div className="p-4 rounded-xl bg-emerald-950/20 border border-emerald-900/50 text-emerald-400 text-xs flex items-start gap-2">
+                <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs flex items-start gap-2">
                   <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" />
                   <div>
-                    <h5 className="font-bold text-white text-sm mb-1">Link Created Successfully!</h5>
+                    <h5 className="font-bold text-slate-900 text-sm mb-1">Link Created Successfully!</h5>
                     Send traffic to this URL to start earning.
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                  <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
                     Your Traffic URL
                   </label>
-                  <div className="flex items-center gap-2 bg-slate-950/80 border border-slate-850 rounded-xl p-2.5">
-                    <span className="font-mono text-xs text-teal-400 select-all truncate flex-1 pl-1.5">
+                  <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl p-2.5">
+                    <span className="font-mono text-xs text-teal-600 select-all truncate flex-1 pl-1.5">
                       {createdLink}
                     </span>
                     <button
                       onClick={() => copyToClipboard(createdLink, 'modal-copy')}
-                      className="p-2 bg-slate-900 hover:bg-slate-800 rounded-lg text-slate-300 hover:text-white border border-slate-800 transition active:scale-95 shrink-0"
+                      className="p-2 bg-white hover:bg-slate-100 rounded-lg text-slate-700 hover:text-slate-900 border border-slate-200 transition active:scale-95 shrink-0"
                     >
                       {copiedId === 'modal-copy' ? (
-                        <Check className="h-4 w-4 text-emerald-400" />
+                        <Check className="h-4 w-4 text-emerald-600" />
                       ) : (
                         <Copy className="h-4 w-4" />
                       )}
@@ -294,7 +294,7 @@ export default function TrafficLinksPage() {
 
                 <button
                   onClick={() => setModalOpen(false)}
-                  className="w-full py-2.5 text-center bg-slate-950 hover:bg-slate-800 border border-slate-850 hover:border-slate-800 rounded-xl text-slate-300 hover:text-white font-semibold text-sm transition"
+                  className="w-full py-2.5 text-center bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 rounded-xl text-slate-700 hover:text-slate-900 font-semibold text-sm transition"
                 >
                   Close
                 </button>
@@ -302,16 +302,16 @@ export default function TrafficLinksPage() {
             ) : (
               <form onSubmit={handleCreateLink} className="space-y-6">
                 <div>
-                  <label className="block text-sm font-semibold text-slate-300 mb-2">Target URL</label>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">Target URL</label>
                   <input
                     type="url"
                     required
                     value={targetUrl}
                     onChange={(e) => setTargetUrl(e.target.value)}
                     placeholder="https://example.com/landing-page"
-                    className="w-full bg-slate-950/60 border border-slate-800 focus:border-teal-500 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-teal-500 transition"
+                    className="w-full bg-white border border-slate-300 focus:border-teal-500 rounded-xl px-4 py-3 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-teal-500 transition"
                   />
-                  <p className="text-xs text-slate-500 mt-2">
+                  <p className="text-xs text-slate-400 mt-2">
                     Enter the final destination URL you want to send traffic to.
                   </p>
                 </div>

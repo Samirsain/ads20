@@ -36,7 +36,7 @@ export default function PublisherSidebar() {
     <>
       {/* Mobile Toggle */}
       <button
-        className="fixed top-4 left-4 z-50 flex h-10 w-10 items-center justify-center rounded-xl bg-slate-800 text-white shadow-md border border-slate-700 lg:hidden"
+        className="fixed top-4 left-4 z-50 flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-700 shadow-md border border-slate-200 lg:hidden"
         onClick={() => setOpen(!open)}
       >
         {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -45,24 +45,24 @@ export default function PublisherSidebar() {
       {/* Backdrop */}
       {open && (
         <div
-          className="fixed inset-0 z-30 bg-black/30 lg:hidden"
+          className="fixed inset-0 z-30 bg-slate-900/30 lg:hidden"
           onClick={() => setOpen(false)}
         />
       )}
 
       {/* Sidebar */}
       <aside
-        className={`fixed left-0 top-0 z-40 flex h-full w-64 flex-col bg-slate-900 border-r border-slate-800 shadow-sm transition-transform duration-300 lg:translate-x-0 ${
+        className={`fixed left-0 top-0 z-40 flex h-full w-64 flex-col bg-white border-r border-slate-200 shadow-sm transition-transform duration-300 lg:translate-x-0 ${
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         {/* Logo */}
-        <div className="flex items-center gap-2 px-6 py-5 border-b border-slate-800">
+        <div className="flex items-center gap-2 px-6 py-5 border-b border-slate-200">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600">
             <Zap className="h-4 w-4 text-white" />
           </div>
-          <span className="text-lg font-bold text-white">Ads2Pub</span>
-          <span className="ml-auto text-xs font-medium text-blue-400 bg-blue-900/50 px-2 py-0.5 rounded-full">Publisher</span>
+          <span className="text-lg font-bold text-slate-900">Ads2Pub</span>
+          <span className="ml-auto text-xs font-medium text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">Publisher</span>
         </div>
 
         {/* Nav */}
@@ -76,8 +76,8 @@ export default function PublisherSidebar() {
                 onClick={() => setOpen(false)}
                 className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all ${
                   active
-                    ? 'bg-blue-600 text-white shadow-md shadow-blue-500/10'
-                    : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                    ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
+                    : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
                 }`}
               >
                 <Icon className="h-4 w-4 shrink-0" />
@@ -88,10 +88,10 @@ export default function PublisherSidebar() {
         </nav>
 
         {/* Logout */}
-        <div className="p-4 border-t border-slate-800">
+        <div className="p-4 border-t border-slate-200">
           <button
             onClick={handleLogout}
-            className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-slate-400 hover:bg-red-950/30 hover:text-red-400 transition-all"
+            className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-slate-500 hover:bg-red-50 hover:text-red-600 transition-all"
           >
             <LogOut className="h-4 w-4" />
             Sign Out

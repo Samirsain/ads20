@@ -36,7 +36,7 @@ export default function EarningCalculator() {
           <h2 className="text-3xl font-normal tracking-tight text-zinc-900 sm:text-4xl">
             Monetization Calculator
           </h2>
-          <p className="mt-4 text-zinc-650 font-normal">
+          <p className="mt-4 text-zinc-600 font-normal">
             Apne traffic source ke mutabik expected daily registrations aur per-conversion payout select karke earning estimate check karein.
           </p>
         </div>
@@ -61,7 +61,7 @@ export default function EarningCalculator() {
                     className={`flex items-center gap-2.5 rounded-xl p-3 text-sm font-normal transition-all border text-left ${
                       platform === key
                         ? "border-blue-600 bg-blue-50 text-blue-600 shadow-sm"
-                        : "border-zinc-200 bg-zinc-50 text-zinc-655 hover:bg-zinc-100 hover:text-zinc-900"
+                        : "border-zinc-200 bg-zinc-50 text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"
                     }`}
                   >
                     {details.iconPath ? (
@@ -110,8 +110,8 @@ export default function EarningCalculator() {
             <div>
               <div className="flex justify-between items-center mb-2">
                 <span className="flex items-center gap-1.5 text-xs font-normal text-zinc-500 uppercase tracking-wider">
-                  3. Payout Per Registration (INR)
-                  <span className="group relative cursor-pointer text-zinc-400 hover:text-zinc-650">
+                  3. Payout Per Registration (USD)
+                  <span className="group relative cursor-pointer text-zinc-400 hover:text-zinc-600">
                     <HelpCircle className="h-4 w-4" />
                     <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 scale-0 rounded-lg bg-zinc-950 p-2 text-xs text-zinc-200 transition-all group-hover:scale-100 border border-zinc-800 z-20 font-normal normal-case">
                       Registration hone par milne wala reward amount. Har campaign ka reward rate different hota hai.
@@ -147,7 +147,7 @@ export default function EarningCalculator() {
             <div className="space-y-6">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-normal text-emerald-700 shadow-xs">
                 <Sparkles className="h-3.5 w-3.5 animate-pulse" />
-                Estimated Revenue (INR)
+                Estimated Revenue (USD)
               </span>
 
               {/* Earnings Breakdown */}

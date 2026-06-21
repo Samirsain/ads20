@@ -123,7 +123,7 @@ export default function PaymentsSection() {
                       <span className="text-lg bg-zinc-50 border border-zinc-200 h-8 w-8 flex items-center justify-center rounded-lg">{method.icon}</span>
                       <div>
                         <h4 className="text-xs font-normal text-zinc-900">{method.name}</h4>
-                        <p className="text-[10px] text-zinc-405 font-normal mt-0.5">{method.details}</p>
+                        <p className="text-[10px] text-zinc-400 font-normal mt-0.5">{method.details}</p>
                       </div>
                     </div>
                     <span className="text-[10px] font-normal text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">Active</span>
