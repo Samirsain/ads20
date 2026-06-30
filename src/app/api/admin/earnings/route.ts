@@ -5,10 +5,14 @@ import type { NextRequest } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
-function computeCpmRate(impressions: number, conversions: number): number {
-  if (impressions === 0) return 0.5
-  const convRate = (conversions / impressions) * 100
-  return Math.max(0.5, Math.min(20, convRate))
+function getDateRange(dateStr: string | null): { gte: Date; lt: Date } | undefined {
+  if (!dateStr) return undefined
+  const [year, month, day] = dateStr.split('-').map(Number)
+  const istOffsetMs = 5.5 * 60 * 60 * 1000
+  const startIST = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0))
+  const gte = new Date(startIST.getTime() - istOffsetMs)
+  const lt = new Date(gte.getTime() + 24 * 60 * 60 * 1000)
+  return { gte, lt }
 }
 
 export async function GET(request: NextRequest) {
@@ -16,67 +20,57 @@ export async function GET(request: NextRequest) {
     const admin = getAdminFromRequest(request)
     if (!admin) return unauthorizedResponse()
 
-    const dateParam = request.nextUrl.searchParams.get('date') // YYYY-MM-DD
-    const publisherIdParam = request.nextUrl.searchParams.get('publisherId')
+    const searchParams = request.nextUrl.searchParams
+    const dateStr = searchParams.get('date')
+    const dateRange = getDateRange(dateStr)
 
-    const clickWhere: Record<string, any> = {}
-    const convWhere: Record<string, any> = {}
+    const whereClause = dateRange ? { createdAt: dateRange } : {}
 
-    if (dateParam) {
-      clickWhere.timestamp = {
-        gte: new Date(`${dateParam}T00:00:00.000Z`),
-        lt: new Date(`${dateParam}T23:59:59.999Z`),
-      }
-      convWhere.createdAt = {
-        gte: new Date(`${dateParam}T00:00:00.000Z`),
-        lt: new Date(`${dateParam}T23:59:59.999Z`),
-      }
-    }
-    if (publisherIdParam) {
-      clickWhere.publisherId = publisherIdParam
-      convWhere.publisherId = publisherIdParam
-    }
+    // Get all traffic earnings grouped by user
+    const earningsByUser = await prisma.trafficEarning.groupBy({
+      by: ['userId'],
+      where: whereClause,
+      _sum: { amount: true },
+      _count: { id: true },
+      orderBy: { _sum: { amount: 'desc' } },
+    })
 
-    const [publishers, clicks, conversions] = await Promise.all([
-      prisma.publisher.findMany({ select: { id: true, name: true, email: true } }),
-      prisma.click.findMany({ where: clickWhere, select: { publisherId: true, timestamp: true } }),
-      prisma.conversion.findMany({ where: convWhere, select: { publisherId: true, createdAt: true } }),
+    // Get user details for all user IDs
+    const userIds = earningsByUser.map((e) => e.userId)
+    const users = await prisma.trafficUser.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, name: true, email: true, phone: true, walletBalance: true },
+    })
+
+    const userMap = Object.fromEntries(users.map((u) => [u.id, u]))
+
+    const data = earningsByUser.map((e) => ({
+      userId: e.userId,
+      user: userMap[e.userId] ?? null,
+      totalEarned: Number(e._sum.amount ?? 0),
+      conversions: e._count.id,
+    }))
+
+    // Platform totals for the date
+    const [platformTotal, totalConversions] = await Promise.all([
+      prisma.trafficEarning.aggregate({
+        where: whereClause,
+        _sum: { amount: true },
+      }),
+      prisma.trafficEarning.count({ where: whereClause }),
     ])
 
-    const impMap = new Map<string, number>()
-    for (const c of clicks) {
-      const date = c.timestamp.toISOString().slice(0, 10)
-      const key = `${c.publisherId}|${date}`
-      impMap.set(key, (impMap.get(key) ?? 0) + 1)
-    }
-
-    const convMap = new Map<string, number>()
-    for (const c of conversions) {
-      const date = c.createdAt.toISOString().slice(0, 10)
-      const key = `${c.publisherId}|${date}`
-      convMap.set(key, (convMap.get(key) ?? 0) + 1)
-    }
-
-    const pubById = Object.fromEntries(publishers.map(p => [p.id, p]))
-    const allKeys = new Set([...impMap.keys(), ...convMap.keys()])
-
-    const rows = Array.from(allKeys)
-      .map(key => {
-        const [publisherId, date] = key.split('|')
-        const pub = pubById[publisherId]
-        if (!pub) return null
-        const imp = impMap.get(key) ?? 0
-        const conv = convMap.get(key) ?? 0
-        const cpmRate = computeCpmRate(imp, conv)
-        const earnings = parseFloat(((imp / 1000) * cpmRate).toFixed(4))
-        return { publisherId, publisherName: pub.name, publisherEmail: pub.email, date, impressions: imp, conversions: conv, cpmRate, earnings }
-      })
-      .filter(Boolean)
-      .sort((a, b) => (b!.date > a!.date ? 1 : b!.date < a!.date ? -1 : 0))
-
-    return NextResponse.json({ success: true, data: rows })
+    return NextResponse.json({
+      success: true,
+      data: {
+        filterDate: dateStr ?? null,
+        platformTotal: Number(platformTotal._sum.amount ?? 0),
+        totalConversions,
+        users: data,
+      },
+    })
   } catch (error) {
-    console.error('[admin/earnings GET]', error)
+    console.error('[admin/earnings]', error)
     return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 })
   }
 }
