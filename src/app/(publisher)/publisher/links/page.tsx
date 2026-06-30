@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Plus, Copy, Check, ExternalLink, RefreshCw, X, Link2, AlertCircle, Loader2, MousePointerClick, TrendingUp, DollarSign } from 'lucide-react'
+import { Plus, Copy, Check, ExternalLink, RefreshCw, X, Link2, AlertCircle, Loader2, MousePointerClick, TrendingUp } from 'lucide-react'
 
 interface TrackingLink {
   id: string
@@ -128,9 +128,8 @@ export default function PublisherLinksPage() {
               <tr className="border-b border-slate-200 text-slate-500 text-xs font-semibold uppercase tracking-wider bg-slate-50">
                 <th className="px-6 py-4">Link Code / Target</th>
                 <th className="px-6 py-4">Type</th>
-                <th className="px-6 py-4 text-center">Clicks</th>
-                <th className="px-6 py-4 text-center">Conversions</th>
-                <th className="px-6 py-4">Earnings</th>
+                <th className="px-6 py-4 text-center">Impressions</th>
+                <th className="px-6 py-4 text-center">Leads</th>
                 <th className="px-6 py-4">Created</th>
                 <th className="px-6 py-4 text-right">Action</th>
               </tr>
@@ -139,12 +138,12 @@ export default function PublisherLinksPage() {
               {loading ? (
                 Array.from({ length: 3 }).map((_, i) => (
                   <tr key={i} className="animate-pulse">
-                    <td className="px-6 py-6" colSpan={7}><div className="h-5 bg-slate-200 rounded w-full" /></td>
+                    <td className="px-6 py-6" colSpan={6}><div className="h-5 bg-slate-200 rounded w-full" /></td>
                   </tr>
                 ))
               ) : links.length === 0 ? (
                 <tr>
-                  <td className="px-6 py-12 text-center text-slate-400" colSpan={7}>
+                  <td className="px-6 py-12 text-center text-slate-400" colSpan={6}>
                     <Link2 className="h-8 w-8 text-slate-400 mx-auto mb-2" />
                     No links created yet. Click &apos;Create Link&apos; to get started.
                   </td>
@@ -157,8 +156,7 @@ export default function PublisherLinksPage() {
                   </td>
                   <td className="px-6 py-4"><span className="uppercase tracking-wider text-xs font-bold text-slate-500">{link.linkType}</span></td>
                   <td className="px-6 py-4 text-center font-semibold font-mono text-slate-800">{link.clicks}</td>
-                  <td className="px-6 py-4 text-center font-semibold font-mono text-emerald-600">{link.conversions}</td>
-                  <td className="px-6 py-4 font-mono font-medium text-emerald-600">${Number(link.earned).toFixed(2)}</td>
+                  <td className="px-6 py-4 text-center font-semibold font-mono text-blue-600">{link.conversions}</td>
                   <td className="px-6 py-4 text-slate-500 text-xs">{new Date(link.createdAt).toLocaleDateString()}</td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">
@@ -201,27 +199,20 @@ export default function PublisherLinksPage() {
               <span className="uppercase tracking-wider text-xs font-bold text-slate-400">{link.linkType}</span>
             </div>
             <p className="text-slate-400 text-xs truncate">{link.targetUrl}</p>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               <div className="bg-slate-50 rounded-xl p-2.5 text-center border border-slate-200">
                 <div className="flex items-center justify-center gap-1 mb-1">
                   <MousePointerClick className="h-3 w-3 text-slate-500" />
-                  <span className="text-slate-500 text-xs">Clicks</span>
+                  <span className="text-slate-500 text-xs">Impressions</span>
                 </div>
                 <p className="font-mono font-bold text-slate-900 text-sm">{link.clicks}</p>
               </div>
               <div className="bg-slate-50 rounded-xl p-2.5 text-center border border-slate-200">
                 <div className="flex items-center justify-center gap-1 mb-1">
-                  <TrendingUp className="h-3 w-3 text-emerald-600" />
-                  <span className="text-slate-500 text-xs">Conv.</span>
+                  <TrendingUp className="h-3 w-3 text-blue-600" />
+                  <span className="text-slate-500 text-xs">Leads</span>
                 </div>
-                <p className="font-mono font-bold text-emerald-600 text-sm">{link.conversions}</p>
-              </div>
-              <div className="bg-slate-50 rounded-xl p-2.5 text-center border border-slate-200">
-                <div className="flex items-center justify-center gap-1 mb-1">
-                  <DollarSign className="h-3 w-3 text-emerald-600" />
-                  <span className="text-slate-500 text-xs">Earned</span>
-                </div>
-                <p className="font-mono font-bold text-emerald-600 text-sm">${Number(link.earned).toFixed(2)}</p>
+                <p className="font-mono font-bold text-blue-600 text-sm">{link.conversions}</p>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-2">

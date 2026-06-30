@@ -30,7 +30,6 @@ export async function GET(request: NextRequest) {
         select: {
           id: true,
           externalUserId: true,
-          amount: true,
           status: true,
           createdAt: true,
           trackingLink: { select: { uniqueCode: true, targetUrl: true } },

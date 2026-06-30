@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import {
   LayoutDashboard,
   Users,
-  ArrowRightLeft,
+  BarChart2,
   Wallet,
   Settings,
   LogOut,
@@ -18,6 +18,7 @@ import {
 const navItems = [
   { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/publishers', label: 'Publishers', icon: Users },
+  { href: '/admin/earnings', label: 'Earnings', icon: BarChart2 },
   { href: '/admin/withdrawals', label: 'Withdrawals', icon: Wallet },
   { href: '/admin/settings', label: 'Settings', icon: Settings },
 ]

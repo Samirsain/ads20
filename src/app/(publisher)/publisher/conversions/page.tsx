@@ -6,7 +6,6 @@ import { ArrowRightLeft, RefreshCw, AlertCircle, ChevronLeft, ChevronRight } fro
 interface Conversion {
   id: string
   externalUserId: string
-  amount: string
   status: string
   createdAt: string
   trackingLink: { uniqueCode: string; targetUrl: string }
@@ -50,9 +49,9 @@ export default function PublisherConversionsPage() {
         <div>
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
             <ArrowRightLeft className="h-8 w-8 text-blue-600" />
-            Conversion Logs
+            Traffic Log
           </h1>
-          <p className="text-slate-500 mt-1">Audit log of all registrations tracked via your publisher referral codes</p>
+          <p className="text-slate-500 mt-1">All registrations tracked via your publisher referral codes</p>
         </div>
         <button
           onClick={() => fetchConversions(page)}
@@ -76,10 +75,9 @@ export default function PublisherConversionsPage() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-slate-200 text-slate-500 text-xs font-semibold uppercase tracking-wider bg-slate-50">
-                <th className="px-6 py-4">Conversion ID / External UID</th>
+                <th className="px-6 py-4">External UID</th>
                 <th className="px-6 py-4">Tracking Link</th>
                 <th className="px-6 py-4">Status</th>
-                <th className="px-6 py-4">Commission</th>
                 <th className="px-6 py-4">Converted At</th>
               </tr>
             </thead>
@@ -87,14 +85,14 @@ export default function PublisherConversionsPage() {
               {loading ? (
                 Array.from({ length: 3 }).map((_, idx) => (
                   <tr key={idx} className="animate-pulse">
-                    <td className="px-6 py-6" colSpan={5}>
+                    <td className="px-6 py-6" colSpan={4}>
                       <div className="h-5 bg-slate-200 rounded w-full" />
                     </td>
                   </tr>
                 ))
               ) : conversions.length === 0 ? (
                 <tr>
-                  <td className="px-6 py-12 text-center text-slate-400" colSpan={5}>
+                  <td className="px-6 py-12 text-center text-slate-400" colSpan={4}>
                     <div className="flex flex-col items-center justify-center gap-2">
                       <ArrowRightLeft className="h-8 w-8 text-slate-400" />
                       <span>No conversions logged yet. Send traffic to your links to generate payouts.</span>
@@ -121,9 +119,6 @@ export default function PublisherConversionsPage() {
                       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 border border-emerald-200 text-emerald-700">
                         {c.status}
                       </span>
-                    </td>
-                    <td className="px-6 py-4 font-mono font-bold text-emerald-600">
-                      +${Number(c.amount).toFixed(2)}
                     </td>
                     <td className="px-6 py-4 text-slate-500 text-xs">
                       {new Date(c.createdAt).toLocaleString()}

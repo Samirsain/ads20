@@ -4,17 +4,17 @@ import { useEffect, useState } from 'react'
 import {
   Wallet,
   MousePointerClick,
-  ArrowRightLeft,
+  BarChart2,
   TrendingUp,
   RefreshCw,
   Award,
   Link2,
+  ArrowRightLeft,
 } from 'lucide-react'
 
 interface Conversion {
   id: string
   externalUserId: string
-  amount: string
   status: string
   createdAt: string
   trackingLink: { uniqueCode: string; targetUrl: string }
@@ -31,9 +31,10 @@ interface TrackingLink {
 
 interface DashboardData {
   walletBalance: string
-  totalClicks: number
-  totalConversions: number
-  totalEarned: number
+  totalImpressions: number
+  totalLeads: number
+  currentCpm: number
+  todayEarnings: number
   recentConversions: Conversion[]
   topLink: TrackingLink | null
 }
@@ -49,9 +50,7 @@ export default function PublisherDashboard() {
     try {
       const res = await fetch('/api/publisher/dashboard')
       const json = await res.json()
-      if (!res.ok || !json.success) {
-        throw new Error(json.error || 'Failed to fetch publisher statistics')
-      }
+      if (!res.ok || !json.success) throw new Error(json.error || 'Failed to fetch publisher statistics')
       setData(json.data)
     } catch (err: any) {
       setError(err.message || 'Something went wrong')
@@ -60,9 +59,7 @@ export default function PublisherDashboard() {
     }
   }
 
-  useEffect(() => {
-    fetchDashboard()
-  }, [])
+  useEffect(() => { fetchDashboard() }, [])
 
   return (
     <div className="space-y-8">
@@ -70,7 +67,7 @@ export default function PublisherDashboard() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Publisher Dashboard</h1>
-          <p className="text-slate-500 mt-1">Real-time stats and monetized link performance</p>
+          <p className="text-slate-500 mt-1">Real-time impressions and CPM performance overview</p>
         </div>
         <button
           onClick={fetchDashboard}
@@ -83,9 +80,7 @@ export default function PublisherDashboard() {
       </div>
 
       {error && (
-        <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
-          {error}
-        </div>
+        <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">{error}</div>
       )}
 
       {/* Stats Cards */}
@@ -100,28 +95,28 @@ export default function PublisherDashboard() {
           loading={loading}
         />
         <StatCard
-          title="Total Clicks"
-          value={data?.totalClicks ?? 0}
+          title="Total Impressions"
+          value={(data?.totalImpressions ?? 0).toLocaleString()}
           icon={MousePointerClick}
-          description="Total link clicks recorded"
+          description="All-time link impressions"
           gradient="from-amber-500/10 to-orange-500/5"
           border="border-amber-200"
           loading={loading}
         />
         <StatCard
-          title="Conversions"
-          value={data?.totalConversions ?? 0}
-          icon={ArrowRightLeft}
-          description="Attributed signups"
+          title="CPM Rate (Today)"
+          value={`$${(data?.currentCpm ?? 0.5).toFixed(2)}`}
+          icon={BarChart2}
+          description="Per 1,000 impressions today"
           gradient="from-emerald-500/10 to-teal-500/5"
           border="border-emerald-200"
           loading={loading}
         />
         <StatCard
-          title="Total Earned"
-          value={`$${Number(data?.totalEarned ?? 0).toFixed(2)}`}
+          title="Today's Earnings"
+          value={`$${(data?.todayEarnings ?? 0).toFixed(4)}`}
           icon={TrendingUp}
-          description="All-time system earnings"
+          description="CPM earnings for today"
           gradient="from-purple-500/10 to-pink-500/5"
           border="border-purple-200"
           loading={loading}
@@ -129,11 +124,11 @@ export default function PublisherDashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Recent Conversions */}
+        {/* Recent Traffic Log */}
         <div className="bg-white border border-slate-200 rounded-3xl p-6 lg:col-span-2 space-y-4">
           <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
             <ArrowRightLeft className="h-5 w-5 text-blue-600" />
-            Recent Conversions
+            Recent Traffic Log
           </h3>
 
           {/* Desktop Table */}
@@ -143,7 +138,7 @@ export default function PublisherDashboard() {
                 <tr className="border-b border-slate-200 text-slate-500 text-xs font-semibold uppercase tracking-wider">
                   <th className="px-4 py-3">External UID</th>
                   <th className="px-4 py-3">Link Code</th>
-                  <th className="px-4 py-3">Reward</th>
+                  <th className="px-4 py-3">Status</th>
                   <th className="px-4 py-3">Date</th>
                 </tr>
               </thead>
@@ -155,14 +150,20 @@ export default function PublisherDashboard() {
                     </tr>
                   ))
                 ) : !data || data.recentConversions.length === 0 ? (
-                  <tr><td className="px-4 py-8 text-center text-slate-400" colSpan={4}>No conversions recorded yet.</td></tr>
+                  <tr><td className="px-4 py-8 text-center text-slate-400" colSpan={4}>No traffic logged yet.</td></tr>
                 ) : data.recentConversions.map((c) => (
                   <tr key={c.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-4 py-3 font-mono text-xs text-slate-500">{c.externalUserId}</td>
                     <td className="px-4 py-3">
-                      <span className="font-mono bg-slate-100 px-2 py-0.5 rounded border border-slate-200 text-blue-600 text-xs">{c.trackingLink.uniqueCode}</span>
+                      <span className="font-mono bg-slate-100 px-2 py-0.5 rounded border border-slate-200 text-blue-600 text-xs">
+                        {c.trackingLink.uniqueCode}
+                      </span>
                     </td>
-                    <td className="px-4 py-3 font-medium text-emerald-600">${Number(c.amount).toFixed(2)}</td>
+                    <td className="px-4 py-3">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 border border-emerald-200 text-emerald-700">
+                        {c.status}
+                      </span>
+                    </td>
                     <td className="px-4 py-3 text-slate-500 text-xs">{new Date(c.createdAt).toLocaleDateString()}</td>
                   </tr>
                 ))}
@@ -177,13 +178,17 @@ export default function PublisherDashboard() {
                 <div key={i} className="h-16 bg-slate-200 animate-pulse rounded-xl" />
               ))
             ) : !data || data.recentConversions.length === 0 ? (
-              <p className="text-center text-slate-400 py-6 text-sm">No conversions recorded yet.</p>
+              <p className="text-center text-slate-400 py-6 text-sm">No traffic logged yet.</p>
             ) : data.recentConversions.map((c) => (
               <div key={c.id} className="bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="font-mono bg-slate-100 border border-slate-200 px-2 py-0.5 rounded text-blue-600 text-xs">{c.trackingLink.uniqueCode}</span>
-                    <span className="font-mono font-bold text-emerald-600 text-sm">${Number(c.amount).toFixed(2)}</span>
+                    <span className="font-mono bg-slate-100 border border-slate-200 px-2 py-0.5 rounded text-blue-600 text-xs">
+                      {c.trackingLink.uniqueCode}
+                    </span>
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 border border-emerald-200 text-emerald-700">
+                      {c.status}
+                    </span>
                   </div>
                   <p className="font-mono text-xs text-slate-400 truncate">{c.externalUserId}</p>
                 </div>
@@ -215,7 +220,7 @@ export default function PublisherDashboard() {
               <div className="absolute top-0 right-0 w-24 h-24 rounded-full blur-[30px] opacity-10 bg-amber-500" />
               <div>
                 <span className="text-xs font-semibold text-amber-700 uppercase tracking-widest bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md">
-                  Most Popular
+                  Most Traffic
                 </span>
                 <h4 className="text-slate-900 font-mono font-bold mt-3 text-base">
                   Code: {data.topLink.uniqueCode}
@@ -224,11 +229,10 @@ export default function PublisherDashboard() {
                   Target: {data.topLink.targetUrl}
                 </p>
               </div>
-
               <div className="pt-4 border-t border-slate-200 grid grid-cols-2 gap-4">
                 <div>
-                  <span className="text-slate-400 text-xs uppercase tracking-wider">Clicks</span>
-                  <div className="text-slate-900 font-bold text-lg mt-0.5">{data.topLink.clicks}</div>
+                  <span className="text-slate-400 text-xs uppercase tracking-wider">Impressions</span>
+                  <div className="text-slate-900 font-bold text-lg mt-0.5">{data.topLink.clicks.toLocaleString()}</div>
                 </div>
                 <div>
                   <span className="text-slate-400 text-xs uppercase tracking-wider">Type</span>
@@ -259,7 +263,6 @@ function StatCard({ title, value, icon: Icon, description, gradient, border, loa
   return (
     <div className={`bg-white border border-slate-200 rounded-2xl p-6 relative overflow-hidden transition-all duration-300 hover:translate-y-[-2px] hover:border-slate-300 ${border}`}>
       <div className={`absolute top-0 right-0 w-32 h-32 rounded-full blur-[40px] opacity-45 pointer-events-none bg-gradient-to-br ${gradient}`} />
-
       <div className="flex items-start justify-between relative z-10">
         <div>
           <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider">{title}</p>

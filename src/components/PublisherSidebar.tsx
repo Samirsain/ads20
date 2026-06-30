@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   Link2,
   ArrowRightLeft,
+  TrendingUp,
   Wallet,
   LogOut,
   Menu,
@@ -17,7 +18,8 @@ import {
 const navItems = [
   { href: '/publisher/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/publisher/links', label: 'My Links', icon: Link2 },
-  { href: '/publisher/conversions', label: 'Conversions', icon: ArrowRightLeft },
+  { href: '/publisher/conversions', label: 'Traffic Log', icon: ArrowRightLeft },
+  { href: '/publisher/earnings', label: 'Earnings', icon: TrendingUp },
   { href: '/publisher/withdraw', label: 'Withdraw', icon: Wallet },
 ]
 

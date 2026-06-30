@@ -5,6 +5,12 @@ import type { NextRequest } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
+function computeCpmRate(impressions: number, conversions: number): number {
+  if (impressions === 0) return 0.5
+  const convRate = (conversions / impressions) * 100
+  return Math.max(0.5, Math.min(20, convRate))
+}
+
 export async function GET(request: NextRequest) {
   try {
     const publisher = getPublisherFromRequest(request)
@@ -12,7 +18,6 @@ export async function GET(request: NextRequest) {
 
     const publisherId = publisher.publisherId
 
-    // Fetch publisher details
     const publisherData = await prisma.publisher.findUnique({
       where: { id: publisherId },
       select: { walletBalance: true },
@@ -20,31 +25,39 @@ export async function GET(request: NextRequest) {
 
     if (!publisherData) return unauthorizedResponse()
 
-    // Sum of clicks across all tracking links
+    // Total impressions (clicks) across all links
     const aggregateClicks = await prisma.trackingLink.aggregate({
       where: { publisherId },
       _sum: { clicks: true },
     })
-    const totalClicks = aggregateClicks._sum.clicks ?? 0
+    const totalImpressions = aggregateClicks._sum.clicks ?? 0
 
-    // Conversions count & sum
-    const [totalConversions, aggregateEarnings, recentConversions, topLinks] = await Promise.all([
+    // Today's date range (UTC)
+    const todayStart = new Date()
+    todayStart.setUTCHours(0, 0, 0, 0)
+    const todayEnd = new Date()
+    todayEnd.setUTCHours(23, 59, 59, 999)
+
+    const [totalLeads, todayClicks, todayConversions, recentConversions, topLinks] = await Promise.all([
+      prisma.conversion.count({ where: { publisherId } }),
+      prisma.click.count({
+        where: { publisherId, timestamp: { gte: todayStart, lte: todayEnd } },
+      }),
       prisma.conversion.count({
-        where: { publisherId },
+        where: { publisherId, createdAt: { gte: todayStart, lte: todayEnd } },
       }),
-      prisma.conversion.aggregate({
-        where: { publisherId },
-        _sum: { amount: true },
-      }),
+      // Recent conversions — NO amount field returned
       prisma.conversion.findMany({
         where: { publisherId },
         orderBy: { createdAt: 'desc' },
-        take: 5,
-        include: {
-          trackingLink: {
-            select: { uniqueCode: true, targetUrl: true }
-          }
-        }
+        take: 10,
+        select: {
+          id: true,
+          externalUserId: true,
+          status: true,
+          createdAt: true,
+          trackingLink: { select: { uniqueCode: true, targetUrl: true } },
+        },
       }),
       prisma.trackingLink.findMany({
         where: { publisherId },
@@ -53,16 +66,18 @@ export async function GET(request: NextRequest) {
       }),
     ])
 
-    const totalEarned = aggregateEarnings._sum.amount ?? 0
+    const currentCpm = computeCpmRate(todayClicks, todayConversions)
+    const todayEarnings = parseFloat(((todayClicks / 1000) * currentCpm).toFixed(4))
     const topLink = topLinks[0] ?? null
 
     return NextResponse.json({
       success: true,
       data: {
         walletBalance: publisherData.walletBalance,
-        totalClicks,
-        totalConversions,
-        totalEarned,
+        totalImpressions,
+        totalLeads,
+        currentCpm,
+        todayEarnings,
         recentConversions,
         topLink,
       },
