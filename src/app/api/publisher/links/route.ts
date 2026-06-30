@@ -26,8 +26,11 @@ export async function GET(request: NextRequest) {
     const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000').replace(/\/+$/, '')
 
     const data = links.map((link) => {
+      const impressions = link.clicks
       const conversionsCount = link.conversions.length
-      const earned = link.conversions.reduce((sum, c) => sum + Number(c.amount), 0)
+      const convRate = impressions > 0 ? (conversionsCount / impressions) * 100 : 0
+      const cpmRate = Math.max(0.5, Math.min(20, convRate))
+      const earnings = parseFloat(((impressions / 1000) * cpmRate).toFixed(4))
 
       return {
         id: link.id,
@@ -37,8 +40,8 @@ export async function GET(request: NextRequest) {
         clicks: link.clicks,
         createdAt: link.createdAt,
         trackingUrl: `${appUrl}/t/${link.uniqueCode}`,
-        conversions: conversionsCount,
-        earned,
+        cpmRate,
+        earnings,
       }
     })
 
