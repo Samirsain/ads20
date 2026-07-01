@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
       }),
       prisma.conversion.findMany({
         where: { publisherId },
-        select: { createdAt: true },
+        select: { createdAt: true, amount: true },
       }),
     ])
 
@@ -36,9 +36,11 @@ export async function GET(request: NextRequest) {
     }
 
     const convByDate = new Map<string, number>()
+    const earnByDate = new Map<string, number>()
     for (const c of conversions) {
       const date = c.createdAt.toISOString().slice(0, 10)
       convByDate.set(date, (convByDate.get(date) ?? 0) + 1)
+      earnByDate.set(date, (earnByDate.get(date) ?? 0) + Number(c.amount))
     }
 
     const allDates = new Set([...impByDate.keys(), ...convByDate.keys()])
@@ -49,21 +51,30 @@ export async function GET(request: NextRequest) {
         const imp = impByDate.get(date) ?? 0
         const conv = convByDate.get(date) ?? 0
         const cpmRate = computeCpmRate(imp, conv)
-        const earnings = parseFloat(((imp / 1000) * cpmRate).toFixed(4))
+        // Use actual conversion amounts as earnings (matches wallet balance)
+        const earnings = parseFloat((earnByDate.get(date) ?? 0).toFixed(2))
         return { date, impressions: imp, conversions: conv, cpmRate, earnings }
       })
 
     const today = new Date().toISOString().slice(0, 10)
     const todayRow = dailyData.find(d => d.date === today)
+    const totalImpressions = Array.from(impByDate.values()).reduce((a, b) => a + b, 0)
+    const totalEarnings = parseFloat(dailyData.reduce((sum, d) => sum + d.earnings, 0).toFixed(2))
+
+    // Today's CPM earnings (for dashboard card)
+    const todayImp = impByDate.get(today) ?? 0
+    const todayConv = convByDate.get(today) ?? 0
+    const currentCpm = computeCpmRate(todayImp, todayConv)
+    const todayEarnings = parseFloat((earnByDate.get(today) ?? 0).toFixed(2))
 
     return NextResponse.json({
       success: true,
       data: {
         dailyData,
-        currentCpm: todayRow?.cpmRate ?? 0.5,
-        todayEarnings: todayRow?.earnings ?? 0,
-        totalImpressions: Array.from(impByDate.values()).reduce((a, b) => a + b, 0),
-        totalEarnings: parseFloat(dailyData.reduce((sum, d) => sum + d.earnings, 0).toFixed(4)),
+        currentCpm,
+        todayEarnings,
+        totalImpressions,
+        totalEarnings,
       },
     })
   } catch (error) {

@@ -38,13 +38,16 @@ export async function GET(request: NextRequest) {
     const todayEnd = new Date()
     todayEnd.setUTCHours(23, 59, 59, 999)
 
-    const [totalLeads, todayClicks, todayConversions, recentConversions, topLinks] = await Promise.all([
+    const [totalLeads, todayClicks, todayEarningsAgg, recentConversions, topLinks] = await Promise.all([
       prisma.conversion.count({ where: { publisherId } }),
       prisma.click.count({
         where: { publisherId, timestamp: { gte: todayStart, lte: todayEnd } },
       }),
-      prisma.conversion.count({
+      // Actual earnings today = sum of conversion amounts today
+      prisma.conversion.aggregate({
         where: { publisherId, createdAt: { gte: todayStart, lte: todayEnd } },
+        _sum: { amount: true },
+        _count: { id: true },
       }),
       // Recent conversions — NO amount field returned
       prisma.conversion.findMany({
@@ -66,8 +69,9 @@ export async function GET(request: NextRequest) {
       }),
     ])
 
+    const todayConversions = todayEarningsAgg._count.id
     const currentCpm = computeCpmRate(todayClicks, todayConversions)
-    const todayEarnings = parseFloat(((todayClicks / 1000) * currentCpm).toFixed(4))
+    const todayEarnings = parseFloat(Number(todayEarningsAgg._sum.amount ?? 0).toFixed(2))
     const topLink = topLinks[0] ?? null
 
     return NextResponse.json({

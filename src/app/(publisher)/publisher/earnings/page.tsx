@@ -127,7 +127,7 @@ export default function PublisherEarningsPage() {
           {loading ? (
             <div className="h-8 bg-slate-200 rounded animate-pulse w-28" />
           ) : (
-            <p className="text-3xl font-bold text-slate-900">${(data?.totalEarnings ?? 0).toFixed(2)}</p>
+            <p className="text-3xl font-bold text-slate-900">${Number(data?.totalEarnings ?? 0).toFixed(2)}</p>
           )}
           <p className="text-xs text-slate-400 mt-1">Based on CPM across all days</p>
         </div>
@@ -212,7 +212,7 @@ export default function PublisherEarningsPage() {
                           ${row.cpmRate.toFixed(2)} CPM
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-right font-mono font-bold text-slate-900">${row.earnings.toFixed(4)}</td>
+                      <td className="px-6 py-4 text-right font-mono font-bold text-slate-900">${row.earnings.toFixed(2)}</td>
                     </tr>
                   ))}
                   <tr className="bg-slate-50 border-t-2 border-slate-300">
@@ -222,7 +222,7 @@ export default function PublisherEarningsPage() {
                     <td className="px-6 py-3 text-right font-mono font-bold text-slate-700">{filteredImpressions.toLocaleString()}</td>
                     <td className="px-6 py-3 text-right text-slate-400">—</td>
                     <td className="px-6 py-3 text-right text-slate-400">—</td>
-                    <td className="px-6 py-3 text-right font-mono font-bold text-blue-600">${filteredEarnings.toFixed(4)}</td>
+                    <td className="px-6 py-3 text-right font-mono font-bold text-blue-600">${filteredEarnings.toFixed(2)}</td>
                   </tr>
                 </>
               )}
@@ -233,7 +233,7 @@ export default function PublisherEarningsPage() {
 
       {/* Info note */}
       <div className="p-4 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 text-xs">
-        <strong>How CPM is calculated:</strong> Your CPM rate is based on your traffic quality (conversion rate). Higher conversion rates = higher CPM. Range: $0.50 – $20.00 per 1,000 impressions.
+        <strong>Earnings</strong> reflect actual amounts credited to your wallet per day. <strong>CPM Rate</strong> is your traffic quality score (conversion rate clamped $0.50–$20.00) — shown for performance tracking only.
       </div>
     </div>
   )
