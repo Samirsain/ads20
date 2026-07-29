@@ -1,12 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Target, Eye, EyeOff, Loader2 } from 'lucide-react'
 
 export default function TrafficRegisterPage() {
-  const router = useRouter()
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -34,7 +32,7 @@ export default function TrafficRegisterPage() {
         throw new Error(data.error || 'Registration failed')
       }
 
-      router.push('/traffic/dashboard')
+      window.location.href = '/traffic/dashboard'
     } catch (err: any) {
       setError(err.message || 'Something went wrong')
     } finally {

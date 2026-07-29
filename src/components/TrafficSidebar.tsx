@@ -21,10 +21,18 @@ const navItems = [
   { href: '/traffic/withdraw', label: 'Withdraw', icon: Wallet },
 ]
 
+// Public pages that share this layout but must not show the authenticated nav.
+const publicPaths = ['/traffic/login', '/traffic/register']
+
 export default function TrafficSidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const [open, setOpen] = useState(false)
+
+  // See PublisherSidebar: rendering the nav on a public page prefetches the
+  // protected routes while logged out, and the resulting cached redirects
+  // bounce the user back to login after a successful sign-in.
+  if (publicPaths.includes(pathname)) return null
 
   const handleLogout = async () => {
     document.cookie = 'traffic_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT'

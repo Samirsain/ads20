@@ -23,7 +23,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Email already registered' }, { status: 409 })
     }
 
-    const passwordHash = await bcrypt.hash(password, 12)
+    const passwordHash = await bcrypt.hash(password, 10)
     const publisher = await prisma.publisher.create({
       data: { email, passwordHash, name, phone, isActive: true },
       select: { id: true, email: true, name: true, createdAt: true },

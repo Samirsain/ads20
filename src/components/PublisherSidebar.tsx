@@ -23,10 +23,20 @@ const navItems = [
   { href: '/publisher/withdraw', label: 'Withdraw', icon: Wallet },
 ]
 
+// Public pages that share this layout but must not show the authenticated nav.
+const publicPaths = ['/publisher/login', '/publisher/register']
+
 export default function PublisherSidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const [open, setOpen] = useState(false)
+
+  // Rendering the nav here would prefetch every protected route while the
+  // visitor is still logged out. Middleware answers each prefetch with a
+  // redirect to /publisher/login, those redirects land in the client router
+  // cache, and the post-login router.push() then replays them — bouncing the
+  // user straight back to the login page.
+  if (publicPaths.includes(pathname)) return null
 
   const handleLogout = async () => {
     // Clear cookie by hitting auth logout or removing it client-side

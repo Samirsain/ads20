@@ -1,12 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Target, Eye, EyeOff, Loader2 } from 'lucide-react'
 
 export default function TrafficLoginPage() {
-  const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -30,7 +28,7 @@ export default function TrafficLoginPage() {
         throw new Error(data.error || 'Invalid credentials')
       }
 
-      router.push('/traffic/dashboard')
+      window.location.href = '/traffic/dashboard'
     } catch (err: any) {
       setError(err.message || 'Something went wrong')
     } finally {

@@ -25,10 +25,18 @@ const navItems = [
   { href: '/admin/settings', label: 'Settings', icon: Settings },
 ]
 
+// Public pages that share this layout but must not show the authenticated nav.
+const publicPaths = ['/admin/login']
+
 export default function AdminSidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const [open, setOpen] = useState(false)
+
+  // See PublisherSidebar: rendering the nav on a public page prefetches the
+  // protected routes while logged out, and the resulting cached redirects
+  // bounce the user back to login after a successful sign-in.
+  if (publicPaths.includes(pathname)) return null
 
   const handleLogout = async () => {
     document.cookie = 'admin_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT'

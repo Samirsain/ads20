@@ -1,12 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Zap, Eye, EyeOff, Loader2 } from 'lucide-react'
 
 export default function PublisherRegisterPage() {
-  const router = useRouter()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
@@ -32,7 +30,7 @@ export default function PublisherRegisterPage() {
         throw new Error(data.error || 'Registration failed')
       }
 
-      router.push('/publisher/dashboard')
+      window.location.href = '/publisher/dashboard'
     } catch (err: any) {
       setError(err.message || 'Something went wrong')
     } finally {

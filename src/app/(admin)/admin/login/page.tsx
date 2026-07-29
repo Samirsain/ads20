@@ -1,11 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import { Shield, Eye, EyeOff, Loader2 } from 'lucide-react'
 
 export default function AdminLoginPage() {
-  const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -48,7 +46,7 @@ export default function AdminLoginPage() {
         throw new Error(data.error || 'Invalid credentials')
       }
 
-      router.push('/admin/dashboard')
+      window.location.href = '/admin/dashboard'
     } catch (err: any) {
       if (err.name === 'AbortError') {
         setError('Request timed out — database is waking up, please try again')

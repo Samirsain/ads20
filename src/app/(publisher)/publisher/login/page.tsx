@@ -1,12 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Zap, Eye, EyeOff, Loader2 } from 'lucide-react'
 
 export default function PublisherLoginPage() {
-  const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -49,7 +47,7 @@ export default function PublisherLoginPage() {
         throw new Error(data.error || 'Invalid credentials')
       }
 
-      router.push('/publisher/dashboard')
+      window.location.href = '/publisher/dashboard'
     } catch (err: any) {
       if (err.name === 'AbortError') {
         setError('Request timed out — please try again')
