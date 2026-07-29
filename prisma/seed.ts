@@ -1,13 +1,13 @@
 import 'dotenv/config'
 import { PrismaClient } from '@prisma/client'
-import { PrismaNeon } from '@prisma/adapter-neon'
-import { neonConfig } from '@neondatabase/serverless'
-import ws from 'ws'
+import { PrismaPg } from '@prisma/adapter-pg'
 import bcrypt from 'bcryptjs'
 
-neonConfig.webSocketConstructor = ws
+// Seeding writes DDL-free but many rows — prefer the direct/session connection
+// when available, since the transaction pooler is tuned for short queries.
+const connectionString = process.env.DIRECT_URL || process.env.DATABASE_URL!
 
-const adapter = new PrismaNeon({ connectionString: process.env.DATABASE_URL! })
+const adapter = new PrismaPg({ connectionString })
 const prisma = new PrismaClient({ adapter })
 
 async function main() {
