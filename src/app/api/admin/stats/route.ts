@@ -56,10 +56,14 @@ export async function GET(request: NextRequest) {
 
     const totalClicks = (pubLinksAggregate._sum.clicks ?? 0) + (trafficLinksAggregate._sum.totalClicks ?? 0)
     const totalConversions = totalConversionsCount + (trafficLinksAggregate._sum.conversions ?? 0)
-    const totalPubEarned = pubEarningsAggregate._sum.amount ?? 0
-    const totalTrafficEarned = trafficEarningsAggregate._sum.amount ?? 0
+    // Decimal columns come back as Prisma Decimal objects, which stringify
+    // rather than add: `Decimal(100.50) + Decimal(50.25)` yields the string
+    // "100.550.25", and Number() of that is NaN. Convert before any maths.
+    const totalPubEarned = Number(pubEarningsAggregate._sum.amount ?? 0)
+    const totalTrafficEarned = Number(trafficEarningsAggregate._sum.amount ?? 0)
     const pendingWithdrawals = pendingPubWithdrawals + pendingTrafficWithdrawals
-    const totalPaid = (paidPubAggregate._sum.amount ?? 0) + (paidTrafficAggregate._sum.amount ?? 0)
+    const totalPaid =
+      Number(paidPubAggregate._sum.amount ?? 0) + Number(paidTrafficAggregate._sum.amount ?? 0)
 
     return NextResponse.json({
       success: true,
