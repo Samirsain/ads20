@@ -3,6 +3,7 @@ import { getPublisherFromRequest, unauthorizedResponse } from '@/lib/apiAuth'
 import { createLinkSchema } from '@/lib/validators'
 import { nanoid } from 'nanoid'
 import { NextResponse } from 'next/server'
+import { getAppUrl } from '@/lib/appUrl'
 import type { NextRequest } from 'next/server'
 
 export const dynamic = 'force-dynamic'
@@ -23,7 +24,7 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000').replace(/\/+$/, '')
+    const appUrl = getAppUrl(request)
 
     const data = links.map((link) => {
       const impressions = link.clicks
@@ -82,7 +83,7 @@ export async function POST(request: NextRequest) {
     const targetUrl = config?.value ?? 'https://paisawin.online/register'
 
     const uniqueCode = nanoid(10)
-    const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000').replace(/\/+$/, '')
+    const appUrl = getAppUrl(request)
 
     const link = await prisma.trackingLink.create({
       data: {
