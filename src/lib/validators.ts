@@ -69,7 +69,8 @@ export const updateWithdrawalSchema = z.object({
 
 export const adminSettingsSchema = z.object({
   key: z.string().min(1),
-  value: z.string().min(1),
+  // Trimmed: stray whitespace in a pasted secret or URL silently breaks matching
+  value: z.string().trim().min(1),
 })
 
 // ─── Pagination ───────────────────────────────────────────────────────────────

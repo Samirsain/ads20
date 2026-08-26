@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { postbackBodySchema } from '@/lib/validators'
-import { recordPostbackAttempt } from '@/lib/postbackLog'
+import { maskSecret, recordPostbackAttempt } from '@/lib/postbackLog'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
@@ -32,9 +32,12 @@ async function processPostback(payload: PostbackPayload): Promise<PostbackResult
   const secretConfig = await prisma.globalConfig.findUnique({
     where: { key: 'postback_secret' },
   })
+  // Trim both sides: a secret pasted into Admin → Settings with a trailing
+  // space or newline is invisible in the UI but would reject every postback.
+  const providedSecret = secret.trim()
   const secretIsValid = secretConfig
-    ? secret === secretConfig.value
-    : FALLBACK_POSTBACK_SECRETS.includes(secret)
+    ? providedSecret === secretConfig.value.trim()
+    : FALLBACK_POSTBACK_SECRETS.includes(providedSecret)
 
   if (!secretIsValid) {
     return { success: false, error: 'Invalid secret' }
@@ -186,6 +189,7 @@ async function handlePostback(payload: unknown, source: 'GET' | 'POST') {
       uid: readParam(payload, 'uid'),
       type: readParam(payload, 'type'),
       secretMatched: false,
+      secretHint: maskSecret(readParam(payload, 'secret')),
       result: error,
     })
     return NextResponse.json(
@@ -212,6 +216,7 @@ async function handlePostback(payload: unknown, source: 'GET' | 'POST') {
     uid: result.data.uid,
     type: result.data.type ?? 'auto',
     secretMatched: outcome.error !== 'Invalid secret',
+    secretHint: maskSecret(result.data.secret),
     result: outcome.success
       ? `credited $${outcome.credited}`
       : outcome.reason ?? outcome.error ?? 'rejected',

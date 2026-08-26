@@ -10,7 +10,23 @@ export type PostbackLogEntry = {
   uid: string | null
   type: string | null
   secretMatched: boolean
+  secretHint: string
   result: string
+}
+
+/**
+ * Masked preview of a received secret — enough to spot a typo, a truncated
+ * value or stray whitespace without writing the secret itself into the log.
+ */
+export function maskSecret(secret: string | null | undefined): string {
+  if (!secret) return 'none sent'
+  const trimmed = secret.trim()
+  const padding = trimmed.length === secret.length ? '' : ' + whitespace'
+  const preview =
+    trimmed.length <= 4
+      ? trimmed
+      : `${trimmed.slice(0, 2)}…${trimmed.slice(-2)}`
+  return `${preview} (${trimmed.length} chars${padding})`
 }
 
 /**

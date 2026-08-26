@@ -10,6 +10,7 @@ interface PostbackLogEntry {
   uid: string | null
   type: string | null
   secretMatched: boolean
+  secretHint?: string
   result: string
 }
 
@@ -259,6 +260,7 @@ function PostbackLogCard({
                 <th className="py-2 pr-3">Code</th>
                 <th className="py-2 pr-3">UID</th>
                 <th className="py-2 pr-3">Type</th>
+                <th className="py-2 pr-3">Secret sent</th>
                 <th className="py-2">Result</th>
               </tr>
             </thead>
@@ -271,6 +273,9 @@ function PostbackLogCard({
                   <td className="py-2 pr-3 font-mono">{entry.code ?? '—'}</td>
                   <td className="py-2 pr-3 font-mono">{entry.uid ?? '—'}</td>
                   <td className="py-2 pr-3">{entry.type ?? '—'}</td>
+                  <td className={`py-2 pr-3 font-mono ${entry.secretMatched ? 'text-slate-500' : 'text-red-600'}`}>
+                    {entry.secretHint ?? '—'}
+                  </td>
                   <td
                     className={`py-2 font-semibold ${
                       entry.result.startsWith('credited') ? 'text-emerald-600' : 'text-red-600'
