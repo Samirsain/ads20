@@ -25,12 +25,23 @@ async function main() {
   })
   console.log('Admin user created:', admin.email)
 
-  // Global Config
-  await prisma.globalConfig.upsert({
-    where: { key: 'min_withdrawal' },
-    update: {},
-    create: { key: 'min_withdrawal', value: '50' },
-  })
+  // Global Config — the postback keys must exist, otherwise every incoming
+  // postback is checked against a hardcoded fallback secret and conversions
+  // silently fail with "Invalid secret".
+  const defaultConfig: Record<string, string> = {
+    min_withdrawal: '50',
+    postback_secret: 'your-postback-secret-key-for-dev',
+    pub_earn_amount: '0.05',
+    traffic_earn_amount: '3.00',
+  }
+
+  for (const [key, value] of Object.entries(defaultConfig)) {
+    await prisma.globalConfig.upsert({
+      where: { key },
+      update: {},
+      create: { key, value },
+    })
+  }
   console.log('Global configuration seeded.')
 
   console.log('Seeding complete!')

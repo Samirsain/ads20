@@ -39,6 +39,7 @@ export async function GET(request: NextRequest) {
         targetUrl: link.targetUrl,
         linkType: link.linkType,
         clicks: link.clicks,
+        conversions: conversionsCount,
         createdAt: link.createdAt,
         trackingUrl: `${appUrl}/t/${link.uniqueCode}`,
         cpmRate,

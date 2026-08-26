@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Plus, Copy, Check, ExternalLink, RefreshCw, X, Link2, AlertCircle, Loader2, MousePointerClick, BarChart2, DollarSign } from 'lucide-react'
+import { Plus, Copy, Check, ExternalLink, RefreshCw, X, Link2, AlertCircle, Loader2, MousePointerClick, BarChart2, DollarSign, Target } from 'lucide-react'
 
 interface TrackingLink {
   id: string
@@ -9,6 +9,7 @@ interface TrackingLink {
   targetUrl: string
   linkType: string
   clicks: number
+  conversions: number
   cpmRate: number
   earnings: number
   createdAt: string
@@ -129,6 +130,7 @@ export default function PublisherLinksPage() {
                 <th className="px-6 py-4">Link Code / Target</th>
                 <th className="px-6 py-4">Type</th>
                 <th className="px-6 py-4 text-center">Impressions</th>
+                <th className="px-6 py-4 text-center">Conversions</th>
                 <th className="px-6 py-4 text-center">CPM Rate</th>
                 <th className="px-6 py-4 text-center">Earnings</th>
                 <th className="px-6 py-4">Created</th>
@@ -139,12 +141,12 @@ export default function PublisherLinksPage() {
               {loading ? (
                 Array.from({ length: 3 }).map((_, i) => (
                   <tr key={i} className="animate-pulse">
-                    <td className="px-6 py-6" colSpan={7}><div className="h-5 bg-slate-200 rounded w-full" /></td>
+                    <td className="px-6 py-6" colSpan={8}><div className="h-5 bg-slate-200 rounded w-full" /></td>
                   </tr>
                 ))
               ) : links.length === 0 ? (
                 <tr>
-                  <td className="px-6 py-12 text-center text-slate-400" colSpan={7}>
+                  <td className="px-6 py-12 text-center text-slate-400" colSpan={8}>
                     <Link2 className="h-8 w-8 text-slate-400 mx-auto mb-2" />
                     No links created yet. Click &apos;Create Link&apos; to get started.
                   </td>
@@ -157,6 +159,7 @@ export default function PublisherLinksPage() {
                   </td>
                   <td className="px-6 py-4"><span className="uppercase tracking-wider text-xs font-bold text-slate-500">{link.linkType}</span></td>
                   <td className="px-6 py-4 text-center font-semibold font-mono text-slate-800">{link.clicks.toLocaleString()}</td>
+                  <td className="px-6 py-4 text-center font-semibold font-mono text-emerald-600">{(link.conversions ?? 0).toLocaleString()}</td>
                   <td className="px-6 py-4 text-center">
                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 border border-emerald-200 text-emerald-700">
                       ${link.cpmRate.toFixed(2)}
@@ -205,13 +208,20 @@ export default function PublisherLinksPage() {
               <span className="uppercase tracking-wider text-xs font-bold text-slate-400">{link.linkType}</span>
             </div>
             <p className="text-slate-400 text-xs truncate">{link.targetUrl}</p>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-4 gap-2">
               <div className="bg-slate-50 rounded-xl p-2.5 text-center border border-slate-200">
                 <div className="flex items-center justify-center gap-1 mb-1">
                   <MousePointerClick className="h-3 w-3 text-slate-500" />
                   <span className="text-slate-500 text-xs">Impr.</span>
                 </div>
                 <p className="font-mono font-bold text-slate-900 text-sm">{link.clicks.toLocaleString()}</p>
+              </div>
+              <div className="bg-slate-50 rounded-xl p-2.5 text-center border border-slate-200">
+                <div className="flex items-center justify-center gap-1 mb-1">
+                  <Target className="h-3 w-3 text-emerald-600" />
+                  <span className="text-slate-500 text-xs">Conv.</span>
+                </div>
+                <p className="font-mono font-bold text-emerald-600 text-sm">{(link.conversions ?? 0).toLocaleString()}</p>
               </div>
               <div className="bg-slate-50 rounded-xl p-2.5 text-center border border-slate-200">
                 <div className="flex items-center justify-center gap-1 mb-1">
