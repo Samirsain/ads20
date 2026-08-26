@@ -46,7 +46,7 @@ export const createTrafficLinkSchema = z.object({
 export const withdrawalSchema = z.object({
   amount: z.number().positive('Amount must be positive').min(10, 'Minimum withdrawal is $10'),
   walletAddress: z.string().min(10, 'Invalid wallet address').max(100, 'Wallet address too long'),
-  network: z.enum(['TRC20', 'ERC20', 'BEP20'], { errorMap: () => ({ message: 'Invalid network' }) }),
+  network: z.enum(['TRC20', 'ERC20', 'BEP20'], { message: 'Invalid network' }),
 })
 
 // ─── Postback ─────────────────────────────────────────────────────────────────
@@ -54,14 +54,9 @@ export const withdrawalSchema = z.object({
 export const postbackBodySchema = z.object({
   code: z.string().min(1, 'code is required'),
   uid: z.string().min(1, 'uid is required'),
-  type: z.enum(['publisher', 'traffic']),
-  secret: z.string().min(1, 'secret is required'),
-})
-
-export const postbackQuerySchema = z.object({
-  publisher_id: z.string().min(1, 'publisher_id is required'),
-  user_id: z.string().min(1, 'user_id is required'),
-  event: z.string().min(1, 'event is required'),
+  // Optional: when the sender omits it we resolve the type from the code itself,
+  // so a postback missing `type` still credits the conversion.
+  type: z.enum(['publisher', 'traffic']).optional(),
   secret: z.string().min(1, 'secret is required'),
 })
 
