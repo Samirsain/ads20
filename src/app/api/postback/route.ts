@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { postbackBodySchema } from '@/lib/validators'
+import { recordPostbackAttempt } from '@/lib/postbackLog'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
@@ -164,12 +165,29 @@ async function resolveLinkType(code: string): Promise<'publisher' | 'traffic' | 
   return null
 }
 
-async function handlePostback(payload: unknown) {
+function readParam(payload: unknown, key: string): string | null {
+  if (payload && typeof payload === 'object') {
+    const value = (payload as Record<string, unknown>)[key]
+    if (typeof value === 'string' && value) return value
+  }
+  return null
+}
+
+async function handlePostback(payload: unknown, source: 'GET' | 'POST') {
   const result = postbackBodySchema.safeParse(payload)
 
   if (!result.success) {
     const error = result.error.issues[0].message
     console.warn('[postback rejected]', error, payload)
+    await recordPostbackAttempt({
+      at: new Date().toISOString(),
+      source,
+      code: readParam(payload, 'code'),
+      uid: readParam(payload, 'uid'),
+      type: readParam(payload, 'type'),
+      secretMatched: false,
+      result: error,
+    })
     return NextResponse.json(
       { success: false, error },
       { status: 200 } // Return 200 as specified, but with success: false
@@ -186,6 +204,18 @@ async function handlePostback(payload: unknown) {
       type: result.data.type ?? 'auto',
     })
   }
+
+  await recordPostbackAttempt({
+    at: new Date().toISOString(),
+    source,
+    code: result.data.code,
+    uid: result.data.uid,
+    type: result.data.type ?? 'auto',
+    secretMatched: outcome.error !== 'Invalid secret',
+    result: outcome.success
+      ? `credited $${outcome.credited}`
+      : outcome.reason ?? outcome.error ?? 'rejected',
+  })
 
   return NextResponse.json(outcome, { status: 200 })
 }
@@ -205,7 +235,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return await handlePostback(body)
+    return await handlePostback(body, 'POST')
   } catch (error) {
     console.error('[postback API catch-all error]', error)
     return NextResponse.json(
@@ -235,7 +265,7 @@ export async function GET(request: NextRequest) {
       secret: pick('secret', 'key'),
     }
 
-    return await handlePostback(payload)
+    return await handlePostback(payload, 'GET')
   } catch (error) {
     console.error('[postback API catch-all error]', error)
     return NextResponse.json(

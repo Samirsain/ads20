@@ -1,7 +1,17 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Settings, Save, Loader2, AlertCircle, RefreshCw } from 'lucide-react'
+import { Settings, Save, Loader2, AlertCircle, RefreshCw, Radio, Trash2 } from 'lucide-react'
+
+interface PostbackLogEntry {
+  at: string
+  source: 'GET' | 'POST'
+  code: string | null
+  uid: string | null
+  type: string | null
+  secretMatched: boolean
+  result: string
+}
 
 export default function AdminSettingsPage() {
   const [settings, setSettings] = useState({
@@ -15,6 +25,8 @@ export default function AdminSettingsPage() {
   const [savingKey, setSavingKey] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [postbackLog, setPostbackLog] = useState<PostbackLogEntry[]>([])
+  const [logLoading, setLogLoading] = useState(true)
 
   const fetchSettings = async () => {
     setLoading(true)
@@ -30,6 +42,28 @@ export default function AdminSettingsPage() {
       setError(err.message || 'Error loading configurations')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchPostbackLog = async () => {
+    setLogLoading(true)
+    try {
+      const res = await fetch('/api/admin/postback-log')
+      const data = await res.json()
+      if (res.ok && data.success) setPostbackLog(data.data || [])
+    } catch {
+      // Diagnostics only — a failure here should not block the settings page
+    } finally {
+      setLogLoading(false)
+    }
+  }
+
+  const clearPostbackLog = async () => {
+    try {
+      await fetch('/api/admin/postback-log', { method: 'DELETE' })
+      setPostbackLog([])
+    } catch {
+      // Ignore — the log is best-effort diagnostics
     }
   }
 
@@ -59,6 +93,7 @@ export default function AdminSettingsPage() {
 
   useEffect(() => {
     fetchSettings()
+    fetchPostbackLog()
   }, [])
 
   return (
@@ -73,7 +108,10 @@ export default function AdminSettingsPage() {
           <p className="text-slate-500 mt-1">Configure conversion values, routing URLs, and payout rules</p>
         </div>
         <button
-          onClick={fetchSettings}
+          onClick={() => {
+            fetchSettings()
+            fetchPostbackLog()
+          }}
           disabled={loading}
           className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 hover:text-slate-900 hover:bg-slate-100 active:scale-95 transition disabled:opacity-50"
         >
@@ -151,7 +189,101 @@ export default function AdminSettingsPage() {
           loading={loading}
           placeholder="50"
         />
+
+        <PostbackLogCard
+          entries={postbackLog}
+          loading={logLoading}
+          onRefresh={fetchPostbackLog}
+          onClear={clearPostbackLog}
+        />
       </div>
+    </div>
+  )
+}
+
+function PostbackLogCard({
+  entries,
+  loading,
+  onRefresh,
+  onClear,
+}: {
+  entries: PostbackLogEntry[]
+  loading: boolean
+  onRefresh: () => void
+  onClear: () => void
+}) {
+  return (
+    <div className="bg-white border border-slate-200 rounded-3xl p-6 space-y-4">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+            <Radio className="h-4 w-4 text-violet-600" />
+            Recent Postback Activity
+          </h3>
+          <p className="text-slate-500 text-xs mt-1">
+            The last 25 postbacks received from external platforms. An empty list means nothing is
+            calling <span className="font-mono">/api/postback</span> at all.
+          </p>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={onRefresh}
+            disabled={loading}
+            className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-50 border border-slate-200 text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition active:scale-90 disabled:opacity-50"
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+          <button
+            onClick={onClear}
+            disabled={loading || entries.length === 0}
+            className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-50 border border-slate-200 text-slate-500 hover:text-red-600 hover:bg-red-50 transition active:scale-90 disabled:opacity-50"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+
+      {loading ? (
+        <p className="text-slate-400 text-sm">Loading...</p>
+      ) : entries.length === 0 ? (
+        <p className="text-slate-400 text-sm">
+          No postback has reached the server yet. Verify that the external platform sends the
+          conversion callback with the tracking code it received in the <span className="font-mono">ref</span> parameter.
+        </p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr className="text-slate-500 uppercase tracking-wider border-b border-slate-200">
+                <th className="py-2 pr-3">Time</th>
+                <th className="py-2 pr-3">Code</th>
+                <th className="py-2 pr-3">UID</th>
+                <th className="py-2 pr-3">Type</th>
+                <th className="py-2">Result</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 text-slate-700">
+              {entries.map((entry, i) => (
+                <tr key={`${entry.at}-${i}`}>
+                  <td className="py-2 pr-3 whitespace-nowrap text-slate-500">
+                    {new Date(entry.at).toLocaleString()}
+                  </td>
+                  <td className="py-2 pr-3 font-mono">{entry.code ?? '—'}</td>
+                  <td className="py-2 pr-3 font-mono">{entry.uid ?? '—'}</td>
+                  <td className="py-2 pr-3">{entry.type ?? '—'}</td>
+                  <td
+                    className={`py-2 font-semibold ${
+                      entry.result.startsWith('credited') ? 'text-emerald-600' : 'text-red-600'
+                    }`}
+                  >
+                    {entry.result}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   )
 }

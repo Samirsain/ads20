@@ -58,8 +58,15 @@ export async function GET(
       })
       .catch((err) => console.error('Failed to update traffic link counts:', err))
 
-    // 5. Create redirect response and set cookie
-    const response = NextResponse.redirect(trafficLink.targetUrl)
+    // 5. Create redirect response and set cookie.
+    // The `ref` param is what the destination site must send back on the
+    // postback — the cookie below is set on our domain and is therefore not
+    // readable cross-domain, so without this param traffic conversions can
+    // never be attributed.
+    const targetUrl = new URL(trafficLink.targetUrl)
+    targetUrl.searchParams.set('ref', code)
+
+    const response = NextResponse.redirect(targetUrl.toString())
     response.cookies.set('traffic_ref', code, {
       maxAge: 60 * 60 * 24, // 1 day
       httpOnly: true,
