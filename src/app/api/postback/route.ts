@@ -1,160 +1,197 @@
 import { prisma } from '@/lib/prisma'
-import { postbackBodySchema } from '@/lib/validators'
-import { maskSecret, recordPostbackAttempt } from '@/lib/postbackLog'
+import { Prisma } from '@prisma/client'
+import { postbackBodySchema, type PostbackBody } from '@/lib/validators'
+import { maskSecret, recordConversionEvent, type ConversionEventInput } from '@/lib/postbackLog'
+import { timingSafeEqual } from 'node:crypto'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
-type PostbackPayload = {
-  code: string
-  uid: string
-  type?: 'publisher' | 'traffic'
-  secret: string
-}
+// These defaults are published in this repository, so they authenticate
+// nothing. Accepted only outside production while no secret is configured.
+const PUBLIC_DEFAULT_SECRETS = ['your-postback-secret-key-for-dev', 'pw_secret_changeme']
 
-type PostbackResult = {
-  success: boolean
+// Values a sender may put in `status` for a completed registration. A missing
+// status counts as success: the callback is only meant to fire after one.
+const SUCCESS_STATUSES = new Set([
+  'success', 'successful', 'completed', 'complete', 'registered',
+  'approved', 'confirmed', 'ok', '1', 'true',
+])
+
+type Meta = Pick<ConversionEventInput, 'source' | 'secretHint' | 'ip'>
+
+type Outcome = Omit<ConversionEventInput, keyof Meta> & {
   credited?: number
-  reason?: string
-  error?: string
+  // Credited outcomes are audited inside their transaction.
+  logged?: boolean
 }
 
-// Used only until an admin stores a `postback_secret` in GlobalConfig. Both
-// values are accepted while unset so a sender configured with either of the
-// historic defaults still gets its conversions credited.
-const FALLBACK_POSTBACK_SECRETS = ['your-postback-secret-key-for-dev', 'pw_secret_changeme']
+function safeEqual(a: string, b: string): boolean {
+  const x = Buffer.from(a)
+  const y = Buffer.from(b)
+  return x.length === y.length && timingSafeEqual(x, y)
+}
 
-async function processPostback(payload: PostbackPayload): Promise<PostbackResult> {
-  const { code, uid, secret } = payload
+async function secretIsValid(provided: string): Promise<boolean> {
+  const isProd = process.env.NODE_ENV === 'production'
+  const row = await prisma.globalConfig.findUnique({ where: { key: 'postback_secret' } })
+  // Trim: a secret pasted into Admin → Settings with a trailing space or
+  // newline is invisible in the UI but would reject every postback.
+  const expected = row?.value.trim()
 
-  // 1. Fetch postback_secret from database config
-  const secretConfig = await prisma.globalConfig.findUnique({
-    where: { key: 'postback_secret' },
+  if (!expected) return !isProd && PUBLIC_DEFAULT_SECRETS.includes(provided)
+  if (isProd && PUBLIC_DEFAULT_SECRETS.includes(expected)) {
+    console.error('[postback] postback_secret is a public default — set a new one in Admin → Settings')
+    return false
+  }
+  return safeEqual(provided, expected)
+}
+
+function isUniqueViolation(error: unknown): boolean {
+  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002'
+}
+
+async function processPostback(p: PostbackBody, meta: Meta): Promise<Outcome> {
+  const base = { code: p.code, externalUserId: p.uid, clickId: p.click_id ?? null, linkType: p.type ?? null }
+
+  if (!(await secretIsValid(p.secret.trim()))) {
+    return { ...base, outcome: 'REJECTED', reason: 'Invalid secret', secretMatched: false }
+  }
+  const ok = { ...base, secretMatched: true }
+
+  if (p.status && !SUCCESS_STATUSES.has(p.status.toLowerCase())) {
+    return { ...ok, outcome: 'REJECTED', reason: `registration not successful (status=${p.status})` }
+  }
+
+  const type = p.type ?? (await resolveLinkType(p.code))
+  if (!type) return { ...ok, outcome: 'REJECTED', reason: 'link not found' }
+
+  return type === 'publisher'
+    ? creditPublisher(p, { ...ok, linkType: type }, meta)
+    : creditTraffic(p, { ...ok, linkType: type }, meta)
+}
+
+async function creditPublisher(
+  p: PostbackBody,
+  ok: Omit<Outcome, 'outcome' | 'reason'>,
+  meta: Meta
+): Promise<Outcome> {
+  const link = await prisma.trackingLink.findUnique({ where: { uniqueCode: p.code } })
+  if (!link) return { ...ok, outcome: 'REJECTED', reason: 'link not found' }
+
+  const attributed = { ...ok, publisherId: link.publisherId, trackingLinkId: link.id }
+
+  // click_id is optional, but when sent it must belong to the same link —
+  // a mismatch means the attribution data is inconsistent, so we refuse to
+  // guess and leave it for admin review.
+  let clickId: string | null = null
+  if (p.click_id) {
+    const click = await prisma.click.findUnique({
+      where: { id: p.click_id },
+      select: { trackingLinkId: true },
+    })
+    if (click && click.trackingLinkId !== link.id) {
+      return { ...attributed, outcome: 'REJECTED', reason: 'click_id belongs to a different link' }
+    }
+    if (click) clickId = p.click_id
+  }
+
+  const existing = await prisma.conversion.findUnique({
+    where: { externalUserId: p.uid },
+    select: { id: true },
   })
-  // Trim both sides: a secret pasted into Admin → Settings with a trailing
-  // space or newline is invisible in the UI but would reject every postback.
-  const providedSecret = secret.trim()
-  const secretIsValid = secretConfig
-    ? providedSecret === secretConfig.value.trim()
-    : FALLBACK_POSTBACK_SECRETS.includes(providedSecret)
-
-  if (!secretIsValid) {
-    return { success: false, error: 'Invalid secret' }
+  if (existing) {
+    return { ...attributed, outcome: 'DUPLICATE', reason: 'duplicate', conversionId: existing.id }
   }
 
-  // 2. Resolve the link type. Senders that omit `type` are matched by code.
-  const type = payload.type ?? (await resolveLinkType(code))
+  const earnConfig = await prisma.globalConfig.findUnique({ where: { key: 'pub_earn_amount' } })
+  const earnAmount = parseFloat(earnConfig?.value ?? '0.05')
+  const reason = p.click_id && !clickId ? 'credited (click_id not found)' : 'credited'
 
-  if (!type) {
-    return { success: false, reason: 'link not found' }
-  }
-
-  if (type === 'publisher') {
-    // 3. Find TrackingLink by uniqueCode
-    const trackingLink = await prisma.trackingLink.findUnique({
-      where: { uniqueCode: code },
-    })
-
-    if (!trackingLink) {
-      return { success: false, reason: 'link not found' }
-    }
-
-    // 3. Check duplicate conversion
-    const existingConversion = await prisma.conversion.findUnique({
-      where: {
-        publisherId_externalUserId: {
-          publisherId: trackingLink.publisherId,
-          externalUserId: uid,
-        },
-      },
-    })
-
-    if (existingConversion) {
-      return { success: false, reason: 'duplicate' }
-    }
-
-    // 4. Fetch reward amount
-    const earnConfig = await prisma.globalConfig.findUnique({
-      where: { key: 'pub_earn_amount' },
-    })
-    const earnAmount = parseFloat(earnConfig?.value ?? '0.05')
-
-    // 5. Atomic transaction
-    await prisma.$transaction([
-      prisma.conversion.create({
+  try {
+    const conversion = await prisma.$transaction(async (tx) => {
+      const created = await tx.conversion.create({
         data: {
-          publisherId: trackingLink.publisherId,
-          trackingLinkId: trackingLink.id,
-          externalUserId: uid,
+          publisherId: link.publisherId,
+          trackingLinkId: link.id,
+          clickId,
+          externalUserId: p.uid,
           amount: earnAmount,
           status: 'CONFIRMED',
         },
-      }),
-      prisma.publisher.update({
-        where: { id: trackingLink.publisherId },
+      })
+      await tx.publisher.update({
+        where: { id: link.publisherId },
         data: { walletBalance: { increment: earnAmount } },
-      }),
-    ])
-
-    return { success: true, credited: earnAmount }
+      })
+      await tx.conversionEvent.create({
+        data: { ...meta, ...attributed, outcome: 'CREDITED', reason, conversionId: created.id },
+      })
+      return created
+    })
+    return {
+      ...attributed,
+      outcome: 'CREDITED',
+      reason,
+      conversionId: conversion.id,
+      credited: earnAmount,
+      logged: true,
+    }
+  } catch (error) {
+    // A concurrent retry of the same registration won the race.
+    if (isUniqueViolation(error)) return { ...attributed, outcome: 'DUPLICATE', reason: 'duplicate' }
+    throw error
   }
+}
 
-  // type === 'traffic'
-  // 3. Find TrafficLink by uniqueCode
-  const trafficLink = await prisma.trafficLink.findUnique({
-    where: { uniqueCode: code },
-  })
+async function creditTraffic(
+  p: PostbackBody,
+  ok: Omit<Outcome, 'outcome' | 'reason'>,
+  meta: Meta
+): Promise<Outcome> {
+  const trafficLink = await prisma.trafficLink.findUnique({ where: { uniqueCode: p.code } })
+  if (!trafficLink) return { ...ok, outcome: 'REJECTED', reason: 'link not found' }
+  if (!trafficLink.isActive) return { ...ok, outcome: 'REJECTED', reason: 'link is inactive' }
 
-  if (!trafficLink) {
-    return { success: false, reason: 'link not found' }
-  }
-
-  if (!trafficLink.isActive) {
-    return { success: false, reason: 'link is inactive' }
-  }
-
-  // 3. Check duplicate traffic earning
-  const existingEarning = await prisma.trafficEarning.findUnique({
+  const existing = await prisma.trafficEarning.findUnique({
     where: {
-      trafficLinkId_externalUserId: {
-        trafficLinkId: trafficLink.id,
-        externalUserId: uid,
-      },
+      trafficLinkId_externalUserId: { trafficLinkId: trafficLink.id, externalUserId: p.uid },
     },
+    select: { id: true },
   })
+  if (existing) return { ...ok, outcome: 'DUPLICATE', reason: 'duplicate' }
 
-  if (existingEarning) {
-    return { success: false, reason: 'duplicate' }
-  }
-
-  // 4. Fetch reward amount
-  const earnConfig = await prisma.globalConfig.findUnique({
-    where: { key: 'traffic_earn_amount' },
-  })
+  const earnConfig = await prisma.globalConfig.findUnique({ where: { key: 'traffic_earn_amount' } })
   const earnAmount = parseFloat(earnConfig?.value ?? '3.00')
 
-  // 5. Atomic transaction
-  await prisma.$transaction([
-    prisma.trafficEarning.create({
-      data: {
-        userId: trafficLink.userId,
-        trafficLinkId: trafficLink.id,
-        externalUserId: uid,
-        amount: earnAmount,
-      },
-    }),
-    prisma.trafficUser.update({
-      where: { id: trafficLink.userId },
-      data: { walletBalance: { increment: earnAmount } },
-    }),
-    prisma.trafficLink.update({
-      where: { id: trafficLink.id },
-      data: { conversions: { increment: 1 } },
-    }),
-  ])
-
-  return { success: true, credited: earnAmount }
+  try {
+    await prisma.$transaction([
+      prisma.trafficEarning.create({
+        data: {
+          userId: trafficLink.userId,
+          trafficLinkId: trafficLink.id,
+          externalUserId: p.uid,
+          amount: earnAmount,
+        },
+      }),
+      prisma.trafficUser.update({
+        where: { id: trafficLink.userId },
+        data: { walletBalance: { increment: earnAmount } },
+      }),
+      prisma.trafficLink.update({
+        where: { id: trafficLink.id },
+        data: { conversions: { increment: 1 } },
+      }),
+      prisma.conversionEvent.create({
+        data: { ...meta, ...ok, outcome: 'CREDITED', reason: 'credited' },
+      }),
+    ])
+    return { ...ok, outcome: 'CREDITED', reason: 'credited', credited: earnAmount, logged: true }
+  } catch (error) {
+    if (isUniqueViolation(error)) return { ...ok, outcome: 'DUPLICATE', reason: 'duplicate' }
+    throw error
+  }
 }
 
 async function resolveLinkType(code: string): Promise<'publisher' | 'traffic' | null> {
@@ -171,65 +208,70 @@ async function resolveLinkType(code: string): Promise<'publisher' | 'traffic' | 
 function readParam(payload: unknown, key: string): string | null {
   if (payload && typeof payload === 'object') {
     const value = (payload as Record<string, unknown>)[key]
-    if (typeof value === 'string' && value) return value
+    if (typeof value === 'string' && value) return value.slice(0, 191)
   }
   return null
 }
 
-async function handlePostback(payload: unknown, source: 'GET' | 'POST') {
-  const result = postbackBodySchema.safeParse(payload)
+function callerIp(request: NextRequest): string | null {
+  return (
+    request.headers.get('x-forwarded-for')?.split(',')[0].trim() ??
+    request.headers.get('x-real-ip') ??
+    null
+  )
+}
 
-  if (!result.success) {
-    const error = result.error.issues[0].message
-    console.warn('[postback rejected]', error, payload)
-    await recordPostbackAttempt({
-      at: new Date().toISOString(),
+async function handlePostback(payload: unknown, source: 'GET' | 'POST', request: NextRequest) {
+  const ip = callerIp(request)
+  const parsed = postbackBodySchema.safeParse(payload)
+
+  if (!parsed.success) {
+    const reason = parsed.error.issues[0].message
+    console.warn('[postback rejected]', reason)
+    await recordConversionEvent({
       source,
+      ip,
+      outcome: 'REJECTED',
+      reason,
       code: readParam(payload, 'code'),
-      uid: readParam(payload, 'uid'),
-      type: readParam(payload, 'type'),
+      externalUserId: readParam(payload, 'uid'),
+      clickId: readParam(payload, 'click_id'),
+      linkType: readParam(payload, 'type'),
       secretMatched: false,
       secretHint: maskSecret(readParam(payload, 'secret')),
-      result: error,
     })
-    return NextResponse.json(
-      { success: false, error },
-      { status: 200 } // Return 200 as specified, but with success: false
-    )
+    // 200 for logical rejections so senders do not retry them forever.
+    return NextResponse.json({ success: false, reason }, { status: 200 })
   }
 
-  const outcome = await processPostback(result.data)
+  const meta: Meta = { source, ip, secretHint: maskSecret(parsed.data.secret) }
+  const { credited, logged, ...event } = await processPostback(parsed.data, meta)
 
-  if (!outcome.success) {
-    // Surface why a conversion was not counted — the most common support question
-    console.warn('[postback not credited]', outcome.reason ?? outcome.error, {
-      code: result.data.code,
-      uid: result.data.uid,
-      type: result.data.type ?? 'auto',
-    })
+  if (!logged) await recordConversionEvent({ ...meta, ...event })
+  if (event.outcome !== 'CREDITED') {
+    console.warn('[postback not credited]', event.reason, { code: event.code, uid: event.externalUserId })
   }
 
-  await recordPostbackAttempt({
-    at: new Date().toISOString(),
-    source,
-    code: result.data.code,
-    uid: result.data.uid,
-    type: result.data.type ?? 'auto',
-    secretMatched: outcome.error !== 'Invalid secret',
-    secretHint: maskSecret(result.data.secret),
-    result: outcome.success
-      ? `credited $${outcome.credited}`
-      : outcome.reason ?? outcome.error ?? 'rejected',
-  })
+  return NextResponse.json(
+    event.outcome === 'CREDITED'
+      ? { success: true, credited }
+      : { success: false, reason: event.reason },
+    { status: 200 }
+  )
+}
 
-  return NextResponse.json(outcome, { status: 200 })
+// Internal failures return 500 on purpose: the sender should retry, and
+// retries are safe because a registration can only be credited once.
+function internalError(error: unknown) {
+  console.error('[postback API error]', error)
+  return NextResponse.json({ success: false, reason: 'Internal server error' }, { status: 500 })
 }
 
 export async function POST(request: NextRequest) {
   try {
     let body: unknown = {}
     try {
-      body = await request.json()
+      body = await request.clone().json()
     } catch {
       // Some panels post form-encoded bodies instead of JSON
       try {
@@ -240,18 +282,13 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return await handlePostback(body, 'POST')
+    return await handlePostback(body, 'POST', request)
   } catch (error) {
-    console.error('[postback API catch-all error]', error)
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 200 }
-    )
+    return internalError(error)
   }
 }
 
 // Many external panels fire postbacks as a GET pixel/URL instead of a JSON POST.
-// Without this handler those requests got a 405 and no conversion was ever recorded.
 export async function GET(request: NextRequest) {
   try {
     const params = request.nextUrl.searchParams
@@ -268,14 +305,12 @@ export async function GET(request: NextRequest) {
       uid: pick('uid', 'user_id', 'userid', 'external_user_id'),
       type: pick('type'),
       secret: pick('secret', 'key'),
+      click_id: pick('click_id', 'clickid'),
+      status: pick('status'),
     }
 
-    return await handlePostback(payload, 'GET')
+    return await handlePostback(payload, 'GET', request)
   } catch (error) {
-    console.error('[postback API catch-all error]', error)
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 200 }
-    )
+    return internalError(error)
   }
 }

@@ -19,6 +19,7 @@ async function main() {
   console.log('Resetting database — removing all test data...')
 
   // Publisher side
+  const conversionEvents = await prisma.conversionEvent.deleteMany()
   const clicks = await prisma.click.deleteMany()
   const conversions = await prisma.conversion.deleteMany()
   const pubWithdrawals = await prisma.pubWithdrawal.deleteMany()
@@ -35,6 +36,7 @@ async function main() {
   console.log('Deleted:')
   console.log(`  Clicks:               ${clicks.count}`)
   console.log(`  Conversions:          ${conversions.count}`)
+  console.log(`  Conversion events:    ${conversionEvents.count}`)
   console.log(`  Publisher withdrawals:${pubWithdrawals.count}`)
   console.log(`  Tracking links:       ${trackingLinks.count}`)
   console.log(`  Publishers:           ${publishers.count}`)

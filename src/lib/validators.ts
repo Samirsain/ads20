@@ -52,13 +52,21 @@ export const withdrawalSchema = z.object({
 // ─── Postback ─────────────────────────────────────────────────────────────────
 
 export const postbackBodySchema = z.object({
-  code: z.string().min(1, 'code is required'),
-  uid: z.string().min(1, 'uid is required'),
+  code: z.string().trim().min(1, 'code is required').max(64, 'code too long'),
+  // PaisaWin registration reference — the deduplication key.
+  uid: z.string().trim().min(1, 'uid is required').max(191, 'uid too long'),
   // Optional: when the sender omits it we resolve the type from the code itself,
   // so a postback missing `type` still credits the conversion.
   type: z.enum(['publisher', 'traffic']).optional(),
-  secret: z.string().min(1, 'secret is required'),
+  secret: z.string().min(1, 'secret is required').max(256, 'secret too long'),
+  // Echo of the click_id we appended to the landing URL. Optional for senders
+  // that predate it.
+  click_id: z.string().trim().min(1).max(64).optional(),
+  // Absent = success. Anything not in the success list is logged, not counted.
+  status: z.string().trim().max(32, 'status too long').optional(),
 })
+
+export type PostbackBody = z.infer<typeof postbackBodySchema>
 
 // ─── Admin ────────────────────────────────────────────────────────────────────
 

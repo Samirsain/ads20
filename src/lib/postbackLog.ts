@@ -1,17 +1,21 @@
 import { prisma } from '@/lib/prisma'
 
-export const POSTBACK_LOG_KEY = 'postback_log'
-const MAX_ENTRIES = 25
+export type ConversionOutcome = 'CREDITED' | 'DUPLICATE' | 'REJECTED'
 
-export type PostbackLogEntry = {
-  at: string
+export type ConversionEventInput = {
   source: 'GET' | 'POST'
-  code: string | null
-  uid: string | null
-  type: string | null
+  outcome: ConversionOutcome
+  reason: string
+  code?: string | null
+  externalUserId?: string | null
+  clickId?: string | null
+  linkType?: string | null
   secretMatched: boolean
   secretHint: string
-  result: string
+  conversionId?: string | null
+  publisherId?: string | null
+  trackingLinkId?: string | null
+  ip?: string | null
 }
 
 /**
@@ -30,36 +34,15 @@ export function maskSecret(secret: string | null | undefined): string {
 }
 
 /**
- * Keeps the last few postback attempts so an admin can tell whether the
- * external platform is calling us at all, and why an attempt was rejected.
- * Stored in GlobalConfig to avoid a schema migration, and always best-effort:
- * logging must never break or delay crediting a conversion.
+ * Audit row for a callback that did not credit anything. Credited callbacks
+ * write their row inside the crediting transaction instead, so the audit of a
+ * conversion can never be lost. Best-effort: a failed write must not turn a
+ * rejection into a 500 that makes the sender retry.
  */
-export async function recordPostbackAttempt(entry: PostbackLogEntry): Promise<void> {
+export async function recordConversionEvent(entry: ConversionEventInput): Promise<void> {
   try {
-    const existing = await prisma.globalConfig.findUnique({
-      where: { key: POSTBACK_LOG_KEY },
-    })
-
-    const entries = [entry, ...readEntries(existing?.value)].slice(0, MAX_ENTRIES)
-    const value = JSON.stringify(entries)
-
-    await prisma.globalConfig.upsert({
-      where: { key: POSTBACK_LOG_KEY },
-      update: { value },
-      create: { key: POSTBACK_LOG_KEY, value },
-    })
+    await prisma.conversionEvent.create({ data: entry })
   } catch (error) {
-    console.error('[postback log write failed]', error)
-  }
-}
-
-export function readEntries(value: string | undefined | null): PostbackLogEntry[] {
-  if (!value) return []
-  try {
-    const parsed = JSON.parse(value)
-    return Array.isArray(parsed) ? (parsed as PostbackLogEntry[]) : []
-  } catch {
-    return []
+    console.error('[conversion event write failed]', error)
   }
 }

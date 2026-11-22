@@ -38,8 +38,9 @@ export async function GET(request: NextRequest) {
     const todayEnd = new Date()
     todayEnd.setUTCHours(23, 59, 59, 999)
 
-    const [totalLeads, todayClicks, todayEarningsAgg, recentConversions, topLinks] = await Promise.all([
-      prisma.conversion.count({ where: { publisherId } }),
+    // Conversion counts feed the CPM/earnings maths below but are never
+    // returned: conversion data is admin-only.
+    const [todayClicks, todayEarningsAgg, topLinks] = await Promise.all([
       prisma.click.count({
         where: { publisherId, timestamp: { gte: todayStart, lte: todayEnd } },
       }),
@@ -49,23 +50,11 @@ export async function GET(request: NextRequest) {
         _sum: { amount: true },
         _count: { id: true },
       }),
-      // Recent conversions — NO amount field returned
-      prisma.conversion.findMany({
-        where: { publisherId },
-        orderBy: { createdAt: 'desc' },
-        take: 10,
-        select: {
-          id: true,
-          externalUserId: true,
-          status: true,
-          createdAt: true,
-          trackingLink: { select: { uniqueCode: true, targetUrl: true } },
-        },
-      }),
       prisma.trackingLink.findMany({
         where: { publisherId },
         orderBy: { clicks: 'desc' },
         take: 1,
+        select: { id: true, uniqueCode: true, targetUrl: true, linkType: true, clicks: true, createdAt: true },
       }),
     ])
 
@@ -79,10 +68,8 @@ export async function GET(request: NextRequest) {
       data: {
         walletBalance: publisherData.walletBalance,
         totalImpressions,
-        totalLeads,
         currentCpm,
         todayEarnings,
-        recentConversions,
         topLink,
       },
     })

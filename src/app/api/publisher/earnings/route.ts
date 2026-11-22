@@ -53,7 +53,8 @@ export async function GET(request: NextRequest) {
         const cpmRate = computeCpmRate(imp, conv)
         // Use actual conversion amounts as earnings (matches wallet balance)
         const earnings = parseFloat((earnByDate.get(date) ?? 0).toFixed(2))
-        return { date, impressions: imp, conversions: conv, cpmRate, earnings }
+        // Conversion count is used for cpmRate only — never returned to publishers
+        return { date, impressions: imp, cpmRate, earnings }
       })
 
     const today = new Date().toISOString().slice(0, 10)

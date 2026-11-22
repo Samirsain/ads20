@@ -1,5 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { checkRateLimit } from '@/lib/rateLimit'
+import { after } from 'next/server'
+import { nanoid } from 'nanoid'
 import type { NextRequest } from 'next/server'
 
 export const dynamic = 'force-dynamic'
@@ -31,27 +33,34 @@ export async function GET(
 
     const userAgent = request.headers.get('user-agent') ?? ''
     const referrer = request.headers.get('referer') ?? ''
+    // Generated up front so it can travel to PaisaWin and back on the postback.
+    const clickId = nanoid(16)
 
-    // Fire-and-forget — never let tracking failure block the redirect
-    Promise.all([
-      prisma.click.create({
-        data: {
-          trackingLinkId: link.id,
-          publisherId: link.publisherId,
-          ip,
-          userAgent,
-          referrer,
-        },
-      }),
-      prisma.trackingLink.update({
-        where: { id: link.id },
-        data: { clicks: { increment: 1 } },
-      }),
-    ]).catch((err) => console.error('[tracking click error]', err))
+    // Runs after the redirect is sent — tracking never delays or blocks it
+    after(() =>
+      Promise.all([
+        prisma.click.create({
+          data: {
+            id: clickId,
+            trackingLinkId: link.id,
+            publisherId: link.publisherId,
+            ip,
+            userAgent,
+            referrer,
+          },
+        }),
+        prisma.trackingLink.update({
+          where: { id: link.id },
+          data: { clicks: { increment: 1 } },
+        }),
+      ]).catch((err) => console.error('[tracking click error]', err))
+    )
 
-    // Append ?ref=code to target URL so frontend can read it (HttpOnly cookie not accessible cross-domain)
+    // PaisaWin must store `ref` and `click_id` through registration and send
+    // both back on the postback (an HttpOnly cookie here is not readable cross-domain)
     const targetUrl = new URL(link.targetUrl)
     targetUrl.searchParams.set('ref', code)
+    targetUrl.searchParams.set('click_id', clickId)
 
     return new Response(null, {
       status: 302,

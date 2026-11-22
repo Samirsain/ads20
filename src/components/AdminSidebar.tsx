@@ -14,11 +14,13 @@ import {
   Menu,
   X,
   Shield,
+  Activity,
 } from 'lucide-react'
 
 const navItems = [
   { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/publishers', label: 'Publishers', icon: Users },
+  { href: '/admin/conversions', label: 'Conversions', icon: Activity },
   { href: '/admin/earnings', label: 'Traffic Earnings', icon: BarChart3 },
   { href: '/admin/publisher-earnings', label: 'Pub Earnings', icon: BarChart2 },
   { href: '/admin/withdrawals', label: 'Withdrawals', icon: Wallet },
