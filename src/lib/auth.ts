@@ -1,10 +1,20 @@
 import jwt from 'jsonwebtoken'
 
-const ADMIN_SECRET = process.env.JWT_SECRET_ADMIN || 'default_admin_secret_key_32_chars_min'
-const PUBLISHER_SECRET = process.env.JWT_SECRET_PUBLISHER || 'default_publisher_secret_key_32_chars_min'
-const TRAFFIC_SECRET = process.env.JWT_SECRET_TRAFFIC || 'default_traffic_secret_key_32_chars_min'
-
 export type Role = 'admin' | 'publisher' | 'traffic'
+
+const SECRET_ENV: Record<Role, string> = {
+  admin: 'JWT_SECRET_ADMIN',
+  publisher: 'JWT_SECRET_PUBLISHER',
+  traffic: 'JWT_SECRET_TRAFFIC',
+}
+
+// Development-only fallbacks. They are public in this repo, so anyone could
+// forge a token with them — production refuses to run on them.
+const DEV_SECRETS: Record<Role, string> = {
+  admin: 'default_admin_secret_key_32_chars_min',
+  publisher: 'default_publisher_secret_key_32_chars_min',
+  traffic: 'default_traffic_secret_key_32_chars_min',
+}
 
 export interface TokenPayload {
   id: string
@@ -12,15 +22,14 @@ export interface TokenPayload {
   role: Role
 }
 
+// Read per call, not at import, so `next build` never needs the secrets.
 function getSecret(role: Role): string {
-  switch (role) {
-    case 'admin':
-      return ADMIN_SECRET
-    case 'publisher':
-      return PUBLISHER_SECRET
-    case 'traffic':
-      return TRAFFIC_SECRET
+  const secret = process.env[SECRET_ENV[role]]
+  if (secret) return secret
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error(`${SECRET_ENV[role]} must be set in production`)
   }
+  return DEV_SECRETS[role]
 }
 
 export function signToken(payload: { id: string; email: string }, role: Role): string {

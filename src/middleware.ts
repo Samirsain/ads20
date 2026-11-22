@@ -2,15 +2,23 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { jwtVerify } from 'jose'
 
-const ADMIN_SECRET = process.env.JWT_SECRET_ADMIN || 'default_admin_secret_key_32_chars_min'
-const PUBLISHER_SECRET = process.env.JWT_SECRET_PUBLISHER || 'default_publisher_secret_key_32_chars_min'
-const TRAFFIC_SECRET = process.env.JWT_SECRET_TRAFFIC || 'default_traffic_secret_key_32_chars_min'
+// Dev fallbacks are public in this repo; in production a missing secret
+// rejects every token instead of accepting forgeable ones.
+function secretOrDevDefault(value: string | undefined, devDefault: string): string | null {
+  if (value) return value
+  return process.env.NODE_ENV === 'production' ? null : devDefault
+}
+
+const ADMIN_SECRET = secretOrDevDefault(process.env.JWT_SECRET_ADMIN, 'default_admin_secret_key_32_chars_min')
+const PUBLISHER_SECRET = secretOrDevDefault(process.env.JWT_SECRET_PUBLISHER, 'default_publisher_secret_key_32_chars_min')
+const TRAFFIC_SECRET = secretOrDevDefault(process.env.JWT_SECRET_TRAFFIC, 'default_traffic_secret_key_32_chars_min')
 
 function toKey(secret: string) {
   return new TextEncoder().encode(secret)
 }
 
-async function verifyEdgeToken(token: string, secret: string): Promise<boolean> {
+async function verifyEdgeToken(token: string, secret: string | null): Promise<boolean> {
+  if (!secret) return false
   try {
     await jwtVerify(token, toKey(secret))
     return true

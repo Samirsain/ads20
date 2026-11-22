@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { Users, CheckCircle, XCircle, Search, RefreshCw, AlertCircle, MousePointerClick } from 'lucide-react'
 
 interface Publisher {
@@ -170,7 +171,15 @@ export default function AdminPublishersPage() {
                         <MousePointerClick className="h-3.5 w-3.5" />{pub.totalClicks}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-center font-medium text-emerald-600">{pub._count.conversions}</td>
+                    <td className="px-6 py-4 text-center font-medium">
+                      <Link
+                        href={`/admin/conversions?publisherId=${pub.id}`}
+                        className="text-emerald-600 hover:text-emerald-700 underline-offset-2 hover:underline"
+                        title="View this publisher's conversions"
+                      >
+                        {pub._count.conversions}
+                      </Link>
+                    </td>
                     <td className="px-6 py-4 text-slate-500 text-xs">
                       {new Date(pub.createdAt).toLocaleDateString()}
                     </td>
@@ -267,7 +276,9 @@ export default function AdminPublishersPage() {
               </div>
               <div className="bg-slate-50 rounded-xl p-2 text-center border border-slate-200">
                 <p className="text-slate-400 text-xs mb-0.5">Conv.</p>
-                <p className="font-bold text-emerald-600 text-sm">{pub._count.conversions}</p>
+                <Link href={`/admin/conversions?publisherId=${pub.id}`} className="font-bold text-emerald-600 text-sm underline-offset-2 hover:underline">
+                  {pub._count.conversions}
+                </Link>
               </div>
             </div>
             {/* Action */}

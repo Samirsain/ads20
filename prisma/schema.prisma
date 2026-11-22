@@ -47,12 +47,41 @@ model Conversion {
   publisher      Publisher    @relation(fields: [publisherId], references: [id])
   trackingLinkId String
   trackingLink   TrackingLink @relation(fields: [trackingLinkId], references: [id])
-  externalUserId String
+  // Click.id the visitor arrived with; null when the callback did not echo it back.
+  clickId        String?
+  // PaisaWin registration reference. Globally unique: one registration counts once.
+  externalUserId String       @unique
   amount         Decimal      @default(0.05) @db.Decimal(10, 2)
   status         String       @default("CONFIRMED")
   createdAt      DateTime     @default(now())
 
-  @@unique([publisherId, externalUserId])
+  @@index([publisherId, createdAt])
+  @@index([trackingLinkId, createdAt])
+  @@index([createdAt])
+}
+
+// Audit trail of every conversion callback received — credited, duplicate or
+// rejected. Rejected rows are the admin review queue for unattributed events.
+// No foreign keys on purpose: audit rows must outlive the records they mention.
+model ConversionEvent {
+  id             String   @id @default(cuid())
+  source         String // GET | POST
+  outcome        String // CREDITED | DUPLICATE | REJECTED
+  reason         String
+  code           String?
+  externalUserId String?
+  clickId        String?
+  linkType       String?
+  secretMatched  Boolean  @default(false)
+  secretHint     String   @default("")
+  conversionId   String?
+  publisherId    String?
+  trackingLinkId String?
+  ip             String?
+  createdAt      DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([outcome, createdAt])
 }
 
 model PubWithdrawal {

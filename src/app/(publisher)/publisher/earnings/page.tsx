@@ -6,7 +6,6 @@ import { TrendingUp, RefreshCw, Calendar, MousePointerClick, BarChart2, DollarSi
 interface DayData {
   date: string
   impressions: number
-  conversions: number
   cpmRate: number
   earnings: number
 }
@@ -179,7 +178,6 @@ export default function PublisherEarningsPage() {
               <tr className="border-b border-slate-200 text-slate-500 text-xs font-semibold uppercase tracking-wider bg-slate-50">
                 <th className="px-6 py-4">Date</th>
                 <th className="px-6 py-4 text-right">Impressions</th>
-                <th className="px-6 py-4 text-right">Leads</th>
                 <th className="px-6 py-4 text-right">CPM Rate</th>
                 <th className="px-6 py-4 text-right">Earnings (USD)</th>
               </tr>
@@ -188,12 +186,12 @@ export default function PublisherEarningsPage() {
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i} className="animate-pulse">
-                    <td className="px-6 py-5" colSpan={5}><div className="h-4 bg-slate-200 rounded w-full" /></td>
+                    <td className="px-6 py-5" colSpan={4}><div className="h-4 bg-slate-200 rounded w-full" /></td>
                   </tr>
                 ))
               ) : filteredData.length === 0 ? (
                 <tr>
-                  <td className="px-6 py-12 text-center text-slate-400" colSpan={5}>
+                  <td className="px-6 py-12 text-center text-slate-400" colSpan={4}>
                     <div className="flex flex-col items-center gap-2">
                       <AlertCircle className="h-8 w-8 text-slate-300" />
                       <span>No earnings data for the selected period</span>
@@ -206,7 +204,6 @@ export default function PublisherEarningsPage() {
                     <tr key={row.date} className="hover:bg-slate-50 transition-colors">
                       <td className="px-6 py-4 font-medium text-slate-800">{formatDate(row.date)}</td>
                       <td className="px-6 py-4 text-right font-mono text-slate-700">{row.impressions.toLocaleString()}</td>
-                      <td className="px-6 py-4 text-right font-mono text-blue-600">{row.conversions.toLocaleString()}</td>
                       <td className="px-6 py-4 text-right">
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 border border-emerald-200 text-emerald-700">
                           ${row.cpmRate.toFixed(2)} CPM
@@ -221,7 +218,6 @@ export default function PublisherEarningsPage() {
                     </td>
                     <td className="px-6 py-3 text-right font-mono font-bold text-slate-700">{filteredImpressions.toLocaleString()}</td>
                     <td className="px-6 py-3 text-right text-slate-400">—</td>
-                    <td className="px-6 py-3 text-right text-slate-400">—</td>
                     <td className="px-6 py-3 text-right font-mono font-bold text-blue-600">${filteredEarnings.toFixed(2)}</td>
                   </tr>
                 </>
@@ -233,7 +229,7 @@ export default function PublisherEarningsPage() {
 
       {/* Info note */}
       <div className="p-4 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 text-xs">
-        <strong>Earnings</strong> reflect actual amounts credited to your wallet per day. <strong>CPM Rate</strong> is your traffic quality score (conversion rate clamped $0.50–$20.00) — shown for performance tracking only.
+        <strong>Earnings</strong> reflect actual amounts credited to your wallet per day. <strong>CPM Rate</strong> is your traffic quality score ($0.50–$20.00) — shown for performance tracking only.
       </div>
     </div>
   )

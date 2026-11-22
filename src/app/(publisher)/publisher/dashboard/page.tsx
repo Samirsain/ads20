@@ -9,16 +9,7 @@ import {
   RefreshCw,
   Award,
   Link2,
-  ArrowRightLeft,
 } from 'lucide-react'
-
-interface Conversion {
-  id: string
-  externalUserId: string
-  status: string
-  createdAt: string
-  trackingLink: { uniqueCode: string; targetUrl: string }
-}
 
 interface TrackingLink {
   id: string
@@ -32,10 +23,8 @@ interface TrackingLink {
 interface DashboardData {
   walletBalance: string
   totalImpressions: number
-  totalLeads: number
   currentCpm: number
   todayEarnings: number
-  recentConversions: Conversion[]
   topLink: TrackingLink | null
 }
 
@@ -123,81 +112,7 @@ export default function PublisherDashboard() {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Recent Traffic Log */}
-        <div className="bg-white border border-slate-200 rounded-3xl p-6 lg:col-span-2 space-y-4">
-          <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-            <ArrowRightLeft className="h-5 w-5 text-blue-600" />
-            Recent Traffic Log
-          </h3>
-
-          {/* Desktop Table */}
-          <div className="hidden md:block overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-slate-200 text-slate-500 text-xs font-semibold uppercase tracking-wider">
-                  <th className="px-4 py-3">External UID</th>
-                  <th className="px-4 py-3">Link Code</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">Date</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200 text-slate-700 text-sm">
-                {loading ? (
-                  Array.from({ length: 3 }).map((_, i) => (
-                    <tr key={i} className="animate-pulse">
-                      <td className="px-4 py-4" colSpan={4}><div className="h-4 bg-slate-200 rounded w-full" /></td>
-                    </tr>
-                  ))
-                ) : !data || data.recentConversions.length === 0 ? (
-                  <tr><td className="px-4 py-8 text-center text-slate-400" colSpan={4}>No traffic logged yet.</td></tr>
-                ) : data.recentConversions.map((c) => (
-                  <tr key={c.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-4 py-3 font-mono text-xs text-slate-500">{c.externalUserId}</td>
-                    <td className="px-4 py-3">
-                      <span className="font-mono bg-slate-100 px-2 py-0.5 rounded border border-slate-200 text-blue-600 text-xs">
-                        {c.trackingLink.uniqueCode}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 border border-emerald-200 text-emerald-700">
-                        {c.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-slate-500 text-xs">{new Date(c.createdAt).toLocaleDateString()}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Mobile Cards */}
-          <div className="md:hidden space-y-2">
-            {loading ? (
-              Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="h-16 bg-slate-200 animate-pulse rounded-xl" />
-              ))
-            ) : !data || data.recentConversions.length === 0 ? (
-              <p className="text-center text-slate-400 py-6 text-sm">No traffic logged yet.</p>
-            ) : data.recentConversions.map((c) => (
-              <div key={c.id} className="bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-mono bg-slate-100 border border-slate-200 px-2 py-0.5 rounded text-blue-600 text-xs">
-                      {c.trackingLink.uniqueCode}
-                    </span>
-                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 border border-emerald-200 text-emerald-700">
-                      {c.status}
-                    </span>
-                  </div>
-                  <p className="font-mono text-xs text-slate-400 truncate">{c.externalUserId}</p>
-                </div>
-                <span className="text-slate-400 text-xs shrink-0">{new Date(c.createdAt).toLocaleDateString()}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
+      <div className="max-w-xl">
         {/* Top Performing Link */}
         <div className="bg-white border border-slate-200 rounded-3xl p-6 space-y-6">
           <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">

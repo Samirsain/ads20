@@ -17,18 +17,15 @@ export async function GET(request: NextRequest) {
     const links = await prisma.trackingLink.findMany({
       where: { publisherId: publisher.publisherId },
       orderBy: { createdAt: 'desc' },
-      include: {
-        conversions: {
-          select: { amount: true }
-        }
-      }
+      include: { _count: { select: { conversions: true } } },
     })
 
     const appUrl = getAppUrl(request)
 
     const data = links.map((link) => {
       const impressions = link.clicks
-      const conversionsCount = link.conversions.length
+      // Used for the CPM maths only — conversion data is admin-only
+      const conversionsCount = link._count.conversions
       const convRate = impressions > 0 ? (conversionsCount / impressions) * 100 : 0
       const cpmRate = Math.max(0.5, Math.min(20, convRate))
       const earnings = parseFloat(((impressions / 1000) * cpmRate).toFixed(4))
@@ -39,7 +36,6 @@ export async function GET(request: NextRequest) {
         targetUrl: link.targetUrl,
         linkType: link.linkType,
         clicks: link.clicks,
-        conversions: conversionsCount,
         createdAt: link.createdAt,
         trackingUrl: `${appUrl}/t/${link.uniqueCode}`,
         cpmRate,

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Settings, Save, Loader2, AlertCircle, RefreshCw, Radio, Trash2 } from 'lucide-react'
+import { Settings, Save, Loader2, AlertCircle, RefreshCw, Radio } from 'lucide-react'
 
 interface PostbackLogEntry {
   at: string
@@ -56,15 +56,6 @@ export default function AdminSettingsPage() {
       // Diagnostics only — a failure here should not block the settings page
     } finally {
       setLogLoading(false)
-    }
-  }
-
-  const clearPostbackLog = async () => {
-    try {
-      await fetch('/api/admin/postback-log', { method: 'DELETE' })
-      setPostbackLog([])
-    } catch {
-      // Ignore — the log is best-effort diagnostics
     }
   }
 
@@ -195,7 +186,6 @@ export default function AdminSettingsPage() {
           entries={postbackLog}
           loading={logLoading}
           onRefresh={fetchPostbackLog}
-          onClear={clearPostbackLog}
         />
       </div>
     </div>
@@ -206,12 +196,10 @@ function PostbackLogCard({
   entries,
   loading,
   onRefresh,
-  onClear,
 }: {
   entries: PostbackLogEntry[]
   loading: boolean
   onRefresh: () => void
-  onClear: () => void
 }) {
   return (
     <div className="bg-white border border-slate-200 rounded-3xl p-6 space-y-4">
@@ -233,13 +221,6 @@ function PostbackLogCard({
             className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-50 border border-slate-200 text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition active:scale-90 disabled:opacity-50"
           >
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-          </button>
-          <button
-            onClick={onClear}
-            disabled={loading || entries.length === 0}
-            className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-50 border border-slate-200 text-slate-500 hover:text-red-600 hover:bg-red-50 transition active:scale-90 disabled:opacity-50"
-          >
-            <Trash2 className="h-4 w-4" />
           </button>
         </div>
       </div>
