@@ -10,6 +10,8 @@ import {
   AlertCircle,
   TrendingUp,
   ArrowRightLeft,
+  Clock,
+  Layers,
 } from 'lucide-react'
 
 interface UserEarning {
@@ -63,35 +65,53 @@ export default function AdminEarningsPage() {
     return null
   }, [filterMode, customDate])
 
+  const loadEarnings = useCallback(async (dateStr: string | null) => {
+    const params = new URLSearchParams()
+    if (dateStr) params.set('date', dateStr)
+    const res = await fetch(`/api/admin/earnings?${params}`)
+    const json = await res.json()
+    if (!res.ok || !json.success) throw new Error(json.error || 'Failed to load earnings')
+    return json.data as EarningsData
+  }, [])
+
   const fetchEarnings = useCallback(async () => {
     setLoading(true)
     setError('')
     try {
-      const dateStr = getActiveDateStr()
-      const params = new URLSearchParams()
-      if (dateStr) params.set('date', dateStr)
-      const res = await fetch(`/api/admin/earnings?${params}`)
-      const json = await res.json()
-      if (!res.ok || !json.success) throw new Error(json.error || 'Failed to load earnings')
-      setData(json.data)
-    } catch (err: any) {
-      setError(err.message || 'Something went wrong')
+      const next = await loadEarnings(getActiveDateStr())
+      setData(next)
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Something went wrong')
     } finally {
       setLoading(false)
     }
-  }, [getActiveDateStr])
+  }, [getActiveDateStr, loadEarnings])
 
   useEffect(() => {
-    fetchEarnings()
-  }, [filterMode, customDate]) // eslint-disable-line react-hooks/exhaustive-deps
+    let active = true
+    const dateStr = getActiveDateStr()
+    Promise.resolve().then(() => {
+      if (!active) return
+      setLoading(true)
+      setError('')
+      return loadEarnings(dateStr)
+    }).then((next) => {
+      if (active && next) setData(next)
+    }).catch((err: unknown) => {
+      if (active) setError(err instanceof Error ? err.message : 'Something went wrong')
+    }).finally(() => {
+      if (active) setLoading(false)
+    })
+    return () => { active = false }
+  }, [getActiveDateStr, loadEarnings])
 
   const activeDateStr = getActiveDateStr()
 
-  const tabs: { mode: FilterMode; label: string; emoji: string }[] = [
-    { mode: 'today', label: 'Aaj', emoji: '🟢' },
-    { mode: 'tomorrow', label: 'Kal', emoji: '🔵' },
-    { mode: 'custom', label: 'Custom Date', emoji: '📅' },
-    { mode: 'all', label: 'All Time', emoji: '📊' },
+  const tabs: { mode: FilterMode; label: string; Icon: React.ComponentType<{ className?: string }> }[] = [
+    { mode: 'today', label: 'Aaj (IST)', Icon: Clock },
+    { mode: 'tomorrow', label: 'Kal (IST)', Icon: Calendar },
+    { mode: 'custom', label: 'Custom Date', Icon: Calendar },
+    { mode: 'all', label: 'All Time', Icon: Layers },
   ]
 
   return (
@@ -99,16 +119,16 @@ export default function AdminEarningsPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
-            <BarChart3 className="h-8 w-8 text-violet-600" />
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2.5">
+            <BarChart3 className="h-7 w-7 text-blue-600 shrink-0" />
             Earnings Overview
           </h1>
-          <p className="text-slate-500 mt-1">Sabhi traffic users ki date-wise earning dekho</p>
+          <p className="text-slate-500 mt-1 text-sm">Sabhi traffic users ki IST date-wise earning breakdown</p>
         </div>
         <button
-          onClick={fetchEarnings}
+          onClick={() => void fetchEarnings()}
           disabled={loading}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 hover:text-slate-900 hover:bg-slate-100 active:scale-95 transition disabled:opacity-50"
+          className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-700 hover:text-slate-900 hover:bg-slate-100 active:scale-95 transition disabled:opacity-50 text-sm font-medium w-full sm:w-auto"
         >
           <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           Refresh
@@ -118,30 +138,30 @@ export default function AdminEarningsPage() {
       {/* Filter Tabs */}
       <div className="bg-white border border-slate-200 rounded-2xl p-4 space-y-4">
         <div className="flex flex-wrap gap-2">
-          {tabs.map(({ mode, label, emoji }) => (
+          {tabs.map(({ mode, label, Icon }) => (
             <button
               key={mode}
               onClick={() => setFilterMode(mode)}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold border transition-all active:scale-95 ${
+              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-semibold border transition-all active:scale-95 ${
                 filterMode === mode
-                  ? 'bg-violet-600 text-white border-violet-600 shadow-md shadow-violet-500/20'
-                  : 'bg-white text-slate-600 border-slate-200 hover:border-violet-400 hover:text-violet-700'
+                  ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
+                  : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:text-slate-900'
               }`}
             >
-              <span>{emoji}</span>
+              <Icon className="h-4 w-4" />
               {label}
             </button>
           ))}
         </div>
 
         {filterMode === 'custom' && (
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <Calendar className="h-4 w-4 text-slate-400 shrink-0" />
             <input
               type="date"
               value={customDate}
               onChange={(e) => setCustomDate(e.target.value)}
-              className="border border-slate-300 rounded-xl px-4 py-2 text-sm text-slate-800 focus:outline-none focus:ring-1 focus:ring-violet-500 focus:border-violet-500 transition"
+              className="border border-slate-300 rounded-xl px-4 py-2 text-sm text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-blue-600 transition"
             />
             {customDate && (
               <span className="text-sm text-slate-500 font-medium">
@@ -152,9 +172,9 @@ export default function AdminEarningsPage() {
         )}
 
         {activeDateStr && filterMode !== 'all' && (
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-slate-500">
             Showing earnings for:{' '}
-            <span className="font-semibold text-slate-600">{formatDisplayDate(activeDateStr)}</span>
+            <span className="font-semibold text-slate-700">{formatDisplayDate(activeDateStr)}</span>
           </p>
         )}
       </div>
@@ -167,52 +187,53 @@ export default function AdminEarningsPage() {
 
       {/* Platform Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-gradient-to-br from-violet-600 to-indigo-600 text-white rounded-2xl p-5 shadow-lg shadow-violet-500/25 col-span-1">
-          <div className="flex items-center gap-2 mb-1 opacity-80">
-            <DollarSign className="h-4 w-4" />
+        <div className="bg-slate-900 text-white rounded-2xl p-5 shadow-sm border border-slate-800">
+          <div className="flex items-center gap-2 mb-1 text-slate-300">
+            <DollarSign className="h-4 w-4 text-emerald-400" />
             <span className="text-xs font-semibold uppercase tracking-wider">
               {filterMode === 'today' ? 'Aaj Platform Total' : filterMode === 'tomorrow' ? 'Kal Platform Total' : filterMode === 'custom' ? 'Is Din Platform Total' : 'All-Time Platform Total'}
             </span>
           </div>
           {loading ? (
-            <div className="h-9 w-32 bg-white/30 rounded-lg animate-pulse mt-1" />
+            <div className="h-9 w-32 bg-white/20 rounded-lg animate-pulse mt-1" />
           ) : (
-            <p className="text-4xl font-bold font-mono">${Number(data?.platformTotal ?? 0).toFixed(2)}</p>
+            <p className="text-3xl sm:text-4xl font-bold font-mono tabular-nums">${Number(data?.platformTotal ?? 0).toFixed(2)}</p>
           )}
         </div>
 
         <div className="bg-white border border-slate-200 rounded-2xl p-5">
           <div className="flex items-center gap-2 mb-1">
             <ArrowRightLeft className="h-4 w-4 text-slate-400" />
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Conversions</span>
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Conversions</span>
           </div>
           {loading ? (
             <div className="h-9 w-20 bg-slate-200 rounded-lg animate-pulse mt-1" />
           ) : (
-            <p className="text-4xl font-bold text-slate-900">{data?.totalConversions ?? 0}</p>
+            <p className="text-3xl sm:text-4xl font-bold text-slate-900 font-mono tabular-nums">{data?.totalConversions ?? 0}</p>
           )}
         </div>
 
         <div className="bg-white border border-slate-200 rounded-2xl p-5">
           <div className="flex items-center gap-2 mb-1">
             <Users className="h-4 w-4 text-slate-400" />
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Active Users</span>
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Active Users</span>
           </div>
           {loading ? (
             <div className="h-9 w-16 bg-slate-200 rounded-lg animate-pulse mt-1" />
           ) : (
-            <p className="text-4xl font-bold text-slate-900">{data?.users.length ?? 0}</p>
+            <p className="text-3xl sm:text-4xl font-bold text-slate-900 font-mono tabular-nums">{data?.users.length ?? 0}</p>
           )}
         </div>
       </div>
 
-      {/* Per-User Earnings Table */}
-      <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
-        <div className="px-6 py-4 border-b border-slate-200 flex items-center gap-2">
-          <TrendingUp className="h-4 w-4 text-violet-600" />
+      {/* Per-User Earnings Table & Mobile Cards */}
+      <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+        <div className="px-5 sm:px-6 py-4 border-b border-slate-200 flex items-center gap-2">
+          <TrendingUp className="h-4 w-4 text-blue-600" />
           <h2 className="font-bold text-slate-900 text-sm uppercase tracking-wide">Per-User Breakdown</h2>
         </div>
-        <div className="overflow-x-auto">
+
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-slate-200 text-slate-500 text-xs font-semibold uppercase tracking-wider bg-slate-50">
@@ -280,6 +301,56 @@ export default function AdminEarningsPage() {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Cards */}
+        <div className="md:hidden divide-y divide-slate-200">
+          {loading ? (
+            Array.from({ length: 4 }).map((_, idx) => (
+              <div key={idx} className="p-4 animate-pulse space-y-2">
+                <div className="h-4 bg-slate-200 rounded w-1/2" />
+                <div className="h-3 bg-slate-200 rounded w-1/3" />
+              </div>
+            ))
+          ) : !data || data.users.length === 0 ? (
+            <div className="p-8 text-center text-slate-400 text-sm">
+              {filterMode === 'today'
+                ? 'Aaj kisi ne bhi earning nahi ki'
+                : filterMode === 'tomorrow'
+                ? 'Kal ke liye koi earning nahi'
+                : 'Koi earnings nahi mili'}
+            </div>
+          ) : (
+            data.users.map((item) => (
+              <div key={item.userId} className="p-4 space-y-2.5">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-slate-900 text-sm truncate">
+                      {item.user ? item.user.name : item.userId}
+                    </p>
+                    {item.user && (
+                      <p className="text-xs text-slate-500 truncate">{item.user.email}</p>
+                    )}
+                  </div>
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border bg-blue-50 border-blue-200 text-blue-700 shrink-0">
+                    {item.conversions} conv
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-2.5">
+                    <span className="text-slate-500 block">Earned</span>
+                    <span className="font-mono font-bold text-emerald-600 text-sm">${item.totalEarned.toFixed(2)}</span>
+                  </div>
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-2.5">
+                    <span className="text-slate-500 block">Wallet</span>
+                    <span className="font-mono font-semibold text-slate-800 text-sm">
+                      ${Number(item.user?.walletBalance ?? 0).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>

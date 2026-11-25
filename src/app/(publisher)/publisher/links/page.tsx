@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Plus, Copy, Check, ExternalLink, RefreshCw, X, Link2, AlertCircle, Loader2, MousePointerClick, BarChart2, DollarSign } from 'lucide-react'
 
 interface TrackingLink {
@@ -27,22 +27,26 @@ export default function PublisherLinksPage() {
   const [creating, setCreating] = useState(false)
   const [createdLink, setCreatedLink] = useState<string | null>(null)
 
-  const fetchLinks = async () => {
+  const loadLinks = useCallback(async () => {
+    const res = await fetch('/api/publisher/links')
+    const json = await res.json()
+    if (!res.ok || !json.success) {
+      throw new Error(json.error || 'Failed to load tracking links')
+    }
+    return (json.data || []) as TrackingLink[]
+  }, [])
+
+  const fetchLinks = useCallback(async () => {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch('/api/publisher/links')
-      const json = await res.json()
-      if (!res.ok || !json.success) {
-        throw new Error(json.error || 'Failed to load tracking links')
-      }
-      setLinks(json.data || [])
-    } catch (err: any) {
-      setError(err.message || 'Something went wrong')
+      setLinks(await loadLinks())
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Something went wrong')
     } finally {
       setLoading(false)
     }
-  }
+  }, [loadLinks])
 
   const handleCreateLink = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -63,23 +67,28 @@ export default function PublisherLinksPage() {
       }
 
       setCreatedLink(json.data.link)
-      fetchLinks() // reload
-    } catch (err: any) {
-      setError(err.message || 'Error creating link')
+      await fetchLinks() // reload
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Error creating link')
     } finally {
       setCreating(false)
     }
   }
 
   const copyToClipboard = (url: string, id: string) => {
-    navigator.clipboard.writeText(url)
+    void navigator.clipboard.writeText(url)
     setCopiedId(id)
     setTimeout(() => setCopiedId(null), 2000)
   }
 
   useEffect(() => {
-    fetchLinks()
-  }, [])
+    let active = true
+    loadLinks()
+      .then((d) => { if (active) setLinks(d) })
+      .catch((err: unknown) => { if (active) setError(err instanceof Error ? err.message : 'Something went wrong') })
+      .finally(() => { if (active) setLoading(false) })
+    return () => { active = false }
+  }, [loadLinks])
 
   return (
     <div className="space-y-8">
@@ -120,8 +129,8 @@ export default function PublisherLinksPage() {
         </div>
       )}
 
-      {/* Desktop Table */}
-      <div className="hidden md:block bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
+      {/* Desktop Table (xl+ to avoid narrow-column clipping on tablet/1024px) */}
+      <div className="hidden xl:block bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -183,8 +192,8 @@ export default function PublisherLinksPage() {
         </div>
       </div>
 
-      {/* Mobile Cards */}
-      <div className="md:hidden space-y-3">
+      {/* Mobile & Tablet Cards */}
+      <div className="xl:hidden grid grid-cols-1 md:grid-cols-2 gap-3.5">
         {loading ? (
           Array.from({ length: 3 }).map((_, i) => (
             <div key={i} className="bg-white border border-slate-200 rounded-2xl p-4 animate-pulse">

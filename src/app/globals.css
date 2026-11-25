@@ -12,6 +12,16 @@ body {
   color: #0f172a;
   font-family: var(--font-sans);
   overflow-x: hidden;
+  accent-color: #2563eb;
+}
+
+::selection {
+  background-color: rgba(37, 99, 235, 0.16);
+  color: #0f172a;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
 }
 
 /* Custom Scrollbar for Light Mode */
@@ -33,18 +43,10 @@ body {
   background: #94a3b8;
 }
 
-/* Subtle Grid Background Mesh */
+/* Subtle Clean Surface Background */
 .grid-pattern {
-  background-size: 40px 40px;
-  background-image: 
-    linear-gradient(to right, rgba(0, 0, 0, 0.02) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(0, 0, 0, 0.02) 1px, transparent 1px);
-}
-
-.glow-orb {
-  filter: blur(120px);
-  opacity: 0.12;
-  pointer-events: none;
+  background-image: radial-gradient(rgba(15, 23, 42, 0.045) 1px, transparent 1px);
+  background-size: 28px 28px;
 }
 
 /* Smooth custom glow animation */

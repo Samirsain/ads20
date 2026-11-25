@@ -1,14 +1,17 @@
 import { prisma } from '@/lib/prisma'
 import { getPublisherFromRequest, unauthorizedResponse } from '@/lib/apiAuth'
+import { APP_TIMEZONE, dateIn, todayIST } from '@/lib/appTime'
+import { microsToNumber, toMicros } from '@/lib/money'
+import { getAccountFinancialSummary } from '@/lib/settlement'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
-function computeCpmRate(impressions: number, conversions: number): number {
+function computeCpmRate(impressions: number, actions: number): number {
   if (impressions === 0) return 0.5
-  const convRate = (conversions / impressions) * 100
-  return Math.max(0.5, Math.min(20, convRate))
+  const rate = (actions / impressions) * 100
+  return Math.max(0.5, Math.min(20, rate))
 }
 
 export async function GET(request: NextRequest) {
@@ -18,62 +21,89 @@ export async function GET(request: NextRequest) {
 
     const publisherId = publisher.publisherId
 
-    const [clicks, conversions] = await Promise.all([
+    const [clicks, rows, settlements, summary] = await Promise.all([
       prisma.click.findMany({
         where: { publisherId },
-        select: { timestamp: true },
+        select: { timestamp: true, isValid: true },
       }),
       prisma.conversion.findMany({
-        where: { publisherId },
-        select: { createdAt: true, amount: true },
+        where: { publisherId, isValid: true },
+        select: { createdAt: true, amount: true, settlementId: true },
       }),
+      prisma.dailySettlement.findMany({
+        where: { accountType: 'PUBLISHER', accountId: publisherId },
+        select: { settlementDate: true, status: true },
+      }),
+      getAccountFinancialSummary('PUBLISHER', publisherId),
     ])
 
-    const impByDate = new Map<string, number>()
+    const impByDate = new Map<string, { total: number; valid: number }>()
     for (const c of clicks) {
-      const date = c.timestamp.toISOString().slice(0, 10)
-      impByDate.set(date, (impByDate.get(date) ?? 0) + 1)
+      const date = dateIn(c.timestamp)
+      const prev = impByDate.get(date) ?? { total: 0, valid: 0 }
+      prev.total += 1
+      if (c.isValid) prev.valid += 1
+      impByDate.set(date, prev)
     }
 
-    const convByDate = new Map<string, number>()
-    const earnByDate = new Map<string, number>()
-    for (const c of conversions) {
-      const date = c.createdAt.toISOString().slice(0, 10)
-      convByDate.set(date, (convByDate.get(date) ?? 0) + 1)
-      earnByDate.set(date, (earnByDate.get(date) ?? 0) + Number(c.amount))
+    const countByDate = new Map<string, number>()
+    const earnMicrosByDate = new Map<string, bigint>()
+    const unsettledByDate = new Map<string, number>()
+    for (const r of rows) {
+      const date = dateIn(r.createdAt)
+      countByDate.set(date, (countByDate.get(date) ?? 0) + 1)
+      earnMicrosByDate.set(date, (earnMicrosByDate.get(date) ?? 0n) + toMicros(r.amount))
+      if (!r.settlementId) {
+        unsettledByDate.set(date, (unsettledByDate.get(date) ?? 0) + 1)
+      }
     }
 
-    const allDates = new Set([...impByDate.keys(), ...convByDate.keys()])
+    const settlementMap = new Map(settlements.map((s) => [s.settlementDate, s.status]))
+    const today = todayIST()
+
+    const allDates = new Set([...impByDate.keys(), ...countByDate.keys()])
     const dailyData = Array.from(allDates)
       .sort()
       .reverse()
-      .map(date => {
-        const imp = impByDate.get(date) ?? 0
-        const conv = convByDate.get(date) ?? 0
-        const cpmRate = computeCpmRate(imp, conv)
-        // Use actual conversion amounts as earnings (matches wallet balance)
-        const earnings = parseFloat((earnByDate.get(date) ?? 0).toFixed(2))
-        // Conversion count is used for cpmRate only — never returned to publishers
-        return { date, impressions: imp, cpmRate, earnings }
+      .map((date) => {
+        const imp = impByDate.get(date)?.total ?? 0
+        const validClicks = impByDate.get(date)?.valid ?? 0
+        const actions = countByDate.get(date) ?? 0
+        const cpmRate = computeCpmRate(imp, actions)
+        const earnings = microsToNumber(earnMicrosByDate.get(date) ?? 0n, 4)
+
+        let settlementStatus = settlementMap.get(date) ?? 'NONE'
+        if (settlementStatus === 'NONE' && earnings > 0) {
+          settlementStatus = date === today ? 'ACCRUING_TODAY' : 'PENDING_SETTLEMENT'
+        }
+
+        // Action counts feed cpmRate only — never returned to publishers.
+        return { date, impressions: imp, validClicks, cpmRate, earnings, settlementStatus }
       })
 
-    const today = new Date().toISOString().slice(0, 10)
-    const todayRow = dailyData.find(d => d.date === today)
-    const totalImpressions = Array.from(impByDate.values()).reduce((a, b) => a + b, 0)
-    const totalEarnings = parseFloat(dailyData.reduce((sum, d) => sum + d.earnings, 0).toFixed(2))
+    const totalImpressions = Array.from(impByDate.values()).reduce((a, b) => a + b.total, 0)
+    const totalEarnings = microsToNumber(
+      Array.from(earnMicrosByDate.values()).reduce((a, b) => a + b, 0n),
+      2
+    )
 
-    // Today's CPM earnings (for dashboard card)
-    const todayImp = impByDate.get(today) ?? 0
-    const todayConv = convByDate.get(today) ?? 0
-    const currentCpm = computeCpmRate(todayImp, todayConv)
-    const todayEarnings = parseFloat((earnByDate.get(today) ?? 0).toFixed(2))
+    const todayImp = impByDate.get(today)?.total ?? 0
+    const todayActions = countByDate.get(today) ?? 0
+    const currentCpm = computeCpmRate(todayImp, todayActions)
+    const todayEarnings = microsToNumber(earnMicrosByDate.get(today) ?? 0n, 4)
 
     return NextResponse.json({
       success: true,
       data: {
+        timezone: APP_TIMEZONE,
+        todayDate: today,
         dailyData,
         currentCpm,
         todayEarnings,
+        yesterdayEarnings: summary?.yesterdayEarnings ?? 0,
+        availableBalance: summary?.availableBalance ?? 0,
+        pendingPayment: summary?.pendingPayment ?? 0,
+        totalPaid: summary?.totalPaid ?? 0,
         totalImpressions,
         totalEarnings,
       },

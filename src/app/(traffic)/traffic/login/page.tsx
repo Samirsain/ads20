@@ -29,22 +29,18 @@ export default function TrafficLoginPage() {
       }
 
       window.location.href = '/traffic/dashboard'
-    } catch (err: any) {
-      setError(err.message || 'Something went wrong')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Something went wrong')
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="flex min-h-[calc(100vh-2rem)] items-center justify-center relative overflow-hidden -m-4 md:-m-8 bg-gradient-to-br from-slate-50 to-emerald-50">
-      {/* Decorative Orbs */}
-      <div className="absolute top-1/4 left-1/4 h-[300px] w-[300px] rounded-full bg-teal-600/10 blur-[100px] pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 h-[350px] w-[350px] rounded-full bg-emerald-600/10 blur-[120px] pointer-events-none" />
-
-      <div className="w-full max-w-md bg-white border border-slate-200 rounded-3xl p-8 shadow-sm relative z-10">
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
+      <div className="w-full max-w-md bg-white border border-slate-200 rounded-3xl p-8 shadow-sm">
         <div className="flex flex-col items-center mb-8">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-tr from-teal-500 to-emerald-600 shadow-lg shadow-teal-500/20 mb-3">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-teal-600 shadow-sm mb-3">
             <Target className="h-6 w-6 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Traffic Login</h1>
@@ -94,7 +90,7 @@ export default function TrafficLoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-400 hover:to-emerald-500 text-white font-medium rounded-xl py-3 shadow-lg shadow-teal-600/15 hover:shadow-teal-600/25 active:scale-[0.98] transition disabled:opacity-50 disabled:pointer-events-none mt-8"
+            className="w-full flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-xl py-3 shadow-sm active:scale-[0.98] transition disabled:opacity-50 disabled:pointer-events-none mt-8"
           >
             {loading ? (
               <>

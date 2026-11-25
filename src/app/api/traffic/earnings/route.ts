@@ -1,22 +1,11 @@
 import { prisma } from '@/lib/prisma'
 import { getTrafficUserFromRequest, unauthorizedResponse } from '@/lib/apiAuth'
+import { APP_TIMEZONE, dayRange, isDateStr } from '@/lib/appTime'
 import { paginationSchema } from '@/lib/validators'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 export const dynamic = 'force-dynamic'
-
-function getDateRange(dateStr: string | null): { gte: Date; lt: Date } | undefined {
-  if (!dateStr) return undefined
-  // dateStr format: YYYY-MM-DD (IST date)
-  const [year, month, day] = dateStr.split('-').map(Number)
-  // Build start/end in UTC by offsetting IST (+5:30 = 330 min)
-  const istOffsetMs = 5.5 * 60 * 60 * 1000
-  const startIST = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0))
-  const gte = new Date(startIST.getTime() - istOffsetMs)
-  const lt = new Date(gte.getTime() + 24 * 60 * 60 * 1000)
-  return { gte, lt }
-}
 
 export async function GET(request: NextRequest) {
   try {
@@ -33,8 +22,9 @@ export async function GET(request: NextRequest) {
     const limit = parsed.success ? parsed.data.limit : 50
     const skip = (page - 1) * limit
 
-    const dateStr = searchParams.get('date') // e.g. "2025-06-29"
-    const dateRange = getDateRange(dateStr)
+    const dateStr = searchParams.get('date')
+    const validDate = isDateStr(dateStr) ? dateStr : null
+    const dateRange = validDate ? dayRange(validDate, validDate) : undefined
 
     const whereClause = {
       userId: user.userId,
@@ -51,6 +41,8 @@ export async function GET(request: NextRequest) {
           id: true,
           externalUserId: true,
           amount: true,
+          settlementId: true,
+          settledAt: true,
           createdAt: true,
           trafficLink: { select: { uniqueCode: true, targetUrl: true } },
         },
@@ -67,9 +59,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: {
+        timezone: APP_TIMEZONE,
         earnings,
         totalAmount,
-        filterDate: dateStr ?? null,
+        filterDate: validDate,
         pagination: { page, limit, total, pages: Math.ceil(total / limit) },
       },
     })

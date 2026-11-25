@@ -20,7 +20,7 @@ export default function AdminSettingsPage() {
     postback_secret: 'pw_secret_changeme',
     pub_earn_amount: '0.05',
     traffic_earn_amount: '3.00',
-    min_withdrawal: '50',
+    min_withdrawal: '15.00',
   })
   const [loading, setLoading] = useState(true)
   const [savingKey, setSavingKey] = useState<string | null>(null)
@@ -151,7 +151,7 @@ export default function AdminSettingsPage() {
 
         <SettingInputCard
           title="Publisher Conversion Reward"
-          description="The amount in INR credited to a publisher per signup referral conversion."
+          description="The amount in USD ($) credited per validated publisher signup conversion."
           value={settings.pub_earn_amount}
           onChange={(val) => setSettings((s) => ({ ...s, pub_earn_amount: val }))}
           onSave={() => saveSetting('pub_earn_amount', settings.pub_earn_amount)}
@@ -162,7 +162,7 @@ export default function AdminSettingsPage() {
 
         <SettingInputCard
           title="Traffic Conversion Reward"
-          description="The amount in INR credited to a traffic user per signup referral conversion."
+          description="The amount in USD ($) credited per validated traffic signup conversion."
           value={settings.traffic_earn_amount}
           onChange={(val) => setSettings((s) => ({ ...s, traffic_earn_amount: val }))}
           onSave={() => saveSetting('traffic_earn_amount', settings.traffic_earn_amount)}
@@ -172,14 +172,14 @@ export default function AdminSettingsPage() {
         />
 
         <SettingInputCard
-          title="Minimum Withdrawal Limit"
-          description="The minimum wallet balance required for both publishers and traffic users to request a withdrawal."
+          title="Minimum Withdrawal Limit (USD)"
+          description="Minimum settled available balance required to request a daily withdrawal (enforced floor: $15.00)."
           value={settings.min_withdrawal}
           onChange={(val) => setSettings((s) => ({ ...s, min_withdrawal: val }))}
           onSave={() => saveSetting('min_withdrawal', settings.min_withdrawal)}
           saving={savingKey === 'min_withdrawal'}
           loading={loading}
-          placeholder="50"
+          placeholder="15.00"
         />
 
         <PostbackLogCard

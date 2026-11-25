@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { Plus, Copy, Check, ExternalLink, RefreshCw, X, Link2, AlertCircle, MousePointerClick, Users, TrendingUp, DollarSign } from 'lucide-react'
 
 interface TrafficLink {
@@ -28,22 +28,27 @@ export default function TrafficLinksPage() {
   const [creating, setCreating] = useState(false)
   const [createdLink, setCreatedLink] = useState<string | null>(null)
 
-  const fetchLinks = async () => {
+  const loadLinks = useCallback(async () => {
+    const res = await fetch('/api/traffic/links')
+    const json = await res.json()
+    if (!res.ok || !json.success) {
+      throw new Error(json.error || 'Failed to load traffic links')
+    }
+    return (json.data || []) as TrafficLink[]
+  }, [])
+
+  const fetchLinks = useCallback(async () => {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch('/api/traffic/links')
-      const json = await res.json()
-      if (!res.ok || !json.success) {
-        throw new Error(json.error || 'Failed to load traffic links')
-      }
-      setLinks(json.data || [])
-    } catch (err: any) {
-      setError(err.message || 'Something went wrong')
+      const next = await loadLinks()
+      setLinks(next)
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Something went wrong')
     } finally {
       setLoading(false)
     }
-  }
+  }, [loadLinks])
 
   const handleCreateLink = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -64,9 +69,9 @@ export default function TrafficLinksPage() {
       }
 
       setCreatedLink(json.data.link)
-      fetchLinks() // reload
-    } catch (err: any) {
-      setError(err.message || 'Error creating link')
+      void fetchLinks() // reload
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Error creating link')
     } finally {
       setCreating(false)
     }
@@ -79,23 +84,30 @@ export default function TrafficLinksPage() {
   }
 
   useEffect(() => {
-    fetchLinks()
-  }, [])
+    let active = true
+    loadLinks()
+      .then((next) => { if (active) setLinks(next) })
+      .catch((err: unknown) => {
+        if (active) setError(err instanceof Error ? err.message : 'Something went wrong')
+      })
+      .finally(() => { if (active) setLoading(false) })
+    return () => { active = false }
+  }, [loadLinks])
 
   return (
     <div className="space-y-8">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
-            <Link2 className="h-8 w-8 text-teal-500" />
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+            <Link2 className="h-7 w-7 text-teal-600" />
             Traffic Links
           </h1>
-          <p className="text-slate-500 mt-1">Manage URLs you are sending traffic to and monitor clicks</p>
+          <p className="text-slate-500 mt-1 text-sm">Manage URLs you are sending traffic to and monitor clicks</p>
         </div>
         <div className="flex items-center gap-3">
           <button
-            onClick={fetchLinks}
+            onClick={() => void fetchLinks()}
             disabled={loading}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-700 hover:text-slate-900 hover:bg-slate-100 active:scale-95 transition disabled:opacity-50 text-sm font-semibold"
           >
@@ -108,7 +120,7 @@ export default function TrafficLinksPage() {
               setCreatedLink(null)
               setModalOpen(true)
             }}
-            className="flex items-center gap-2 bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-400 hover:to-emerald-500 text-white font-semibold rounded-xl px-5 py-2.5 shadow-lg shadow-teal-600/10 hover:shadow-teal-600/20 active:scale-95 transition text-sm"
+            className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-xl px-5 py-2.5 shadow-sm active:scale-95 transition text-sm"
           >
             <Plus className="h-5 w-5" />
             Create Link
@@ -123,7 +135,7 @@ export default function TrafficLinksPage() {
       )}
 
       {/* Desktop Table */}
-      <div className="hidden md:block bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
+      <div className="hidden xl:block bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -179,8 +191,8 @@ export default function TrafficLinksPage() {
         </div>
       </div>
 
-      {/* Mobile Cards */}
-      <div className="md:hidden space-y-3">
+      {/* Tablet & Mobile Cards */}
+      <div className="xl:hidden grid grid-cols-1 md:grid-cols-2 gap-3.5">
         {loading ? (
           Array.from({ length: 3 }).map((_, i) => (
             <div key={i} className="bg-white border border-slate-200 rounded-2xl p-4 animate-pulse">

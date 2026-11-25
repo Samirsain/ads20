@@ -44,9 +44,10 @@ export const createTrafficLinkSchema = z.object({
 // ─── Withdrawal ───────────────────────────────────────────────────────────────
 
 export const withdrawalSchema = z.object({
-  amount: z.number().positive('Amount must be positive').min(10, 'Minimum withdrawal is $10'),
-  walletAddress: z.string().min(10, 'Invalid wallet address').max(100, 'Wallet address too long'),
+  amount: z.number().finite('Invalid amount').positive('Amount must be positive').min(15, 'Minimum withdrawal is $15.00'),
+  walletAddress: z.string().trim().min(10, 'Invalid wallet address').max(100, 'Wallet address too long'),
   network: z.enum(['TRC20', 'ERC20', 'BEP20'], { message: 'Invalid network' }),
+  idempotencyKey: z.string().trim().min(8).max(128).optional(),
 })
 
 // ─── Postback ─────────────────────────────────────────────────────────────────
@@ -71,14 +72,33 @@ export type PostbackBody = z.infer<typeof postbackBodySchema>
 // ─── Admin ────────────────────────────────────────────────────────────────────
 
 export const updateWithdrawalSchema = z.object({
-  status: z.enum(['PAID', 'REJECTED']),
-  note: z.string().optional(),
+  status: z.enum(['APPROVED', 'PROCESSING', 'PAID', 'REJECTED', 'UNCERTAIN']),
+  note: z.string().trim().max(500).optional(),
+  txReference: z.string().trim().max(150).optional(),
+  failureReason: z.string().trim().max(500).optional(),
+  idempotencyKey: z.string().trim().min(8).max(128).optional(),
 })
 
 export const adminSettingsSchema = z.object({
   key: z.string().min(1),
   // Trimmed: stray whitespace in a pasted secret or URL silently breaks matching
   value: z.string().trim().min(1),
+})
+
+export const reportClearPreviewSchema = z.object({
+  dates: z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Dates must be YYYY-MM-DD')).min(1).max(90),
+})
+
+export const reportClearExecuteSchema = z.object({
+  dates: z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Dates must be YYYY-MM-DD')).min(1).max(90),
+  reason: z.string().trim().min(3, 'Please provide a reason (at least 3 characters)').max(500),
+  confirmed: z.literal(true, { message: 'Explicit confirmation is required' }),
+  confirmedLargeRange: z.boolean().optional(),
+})
+
+export const reportRestoreSchema = z.object({
+  dates: z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Dates must be YYYY-MM-DD')).min(1).max(90),
+  reason: z.string().trim().min(3, 'Please provide a restore reason').max(500),
 })
 
 // ─── Pagination ───────────────────────────────────────────────────────────────

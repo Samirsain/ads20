@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { Layers, LogIn } from "lucide-react";
+import { InstallAppButton } from "@/components/PwaManager";
 
 export default function Navbar() {
   return (
@@ -28,12 +29,15 @@ export default function Navbar() {
             How It Works
           </a>
           <a href="#payments" className="text-sm font-normal text-zinc-500 hover:text-zinc-900 transition-colors">
-            Weekly Payouts
+            Daily Payouts
           </a>
         </nav>
 
         {/* Auth Buttons */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="hidden sm:block">
+            <InstallAppButton compact />
+          </div>
           <Link
             href="/publisher/login"
             className="flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-normal text-zinc-700 hover:bg-zinc-50 transition-all"

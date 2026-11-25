@@ -36,7 +36,7 @@ export default function PublisherLoginPage() {
         clearTimeout(timeout)
       }
 
-      let data: any = {}
+      let data: { success?: boolean; error?: string } = {}
       try {
         data = await res.json()
       } catch {
@@ -48,11 +48,11 @@ export default function PublisherLoginPage() {
       }
 
       window.location.href = '/publisher/dashboard'
-    } catch (err: any) {
-      if (err.name === 'AbortError') {
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') {
         setError('Request timed out — please try again')
       } else {
-        setError(err.message || 'Something went wrong')
+        setError(err instanceof Error ? err.message : 'Something went wrong')
       }
     } finally {
       setLoading(false)
@@ -60,14 +60,10 @@ export default function PublisherLoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50 p-4 relative overflow-hidden">
-      {/* Decorative Orbs */}
-      <div className="absolute top-1/4 left-1/4 h-[300px] w-[300px] rounded-full bg-blue-600/10 blur-[100px] pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 h-[350px] w-[350px] rounded-full bg-indigo-600/10 blur-[120px] pointer-events-none" />
-
-      <div className="w-full max-w-md bg-white border border-slate-200 rounded-3xl p-8 shadow-sm relative z-10">
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
+      <div className="w-full max-w-md bg-white border border-slate-200 rounded-3xl p-8 shadow-sm">
         <div className="flex flex-col items-center mb-8">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 shadow-lg shadow-blue-500/20 mb-3">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 shadow-sm mb-3">
             <Zap className="h-6 w-6 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Publisher Login</h1>

@@ -35,7 +35,7 @@ export default function AdminLoginPage() {
         clearTimeout(timeout)
       }
 
-      let data: any = {}
+      let data: { success?: boolean; error?: string } = {}
       try {
         data = await res.json()
       } catch {
@@ -47,11 +47,11 @@ export default function AdminLoginPage() {
       }
 
       window.location.href = '/admin/dashboard'
-    } catch (err: any) {
-      if (err.name === 'AbortError') {
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') {
         setError('Request timed out — database is waking up, please try again')
       } else {
-        setError(err.message || 'Something went wrong')
+        setError(err instanceof Error ? err.message : 'Something went wrong')
       }
     } finally {
       setLoading(false)
@@ -59,14 +59,10 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4 relative overflow-hidden">
-      {/* Decorative Orbs */}
-      <div className="absolute top-1/4 left-1/4 h-[300px] w-[300px] rounded-full bg-violet-500/10 blur-[100px] pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 h-[350px] w-[350px] rounded-full bg-blue-500/10 blur-[120px] pointer-events-none" />
-
-      <div className="w-full max-w-md bg-white border border-slate-200 rounded-3xl p-8 shadow-sm relative z-10">
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
+      <div className="w-full max-w-md bg-white border border-slate-200 rounded-3xl p-8 shadow-sm">
         <div className="flex flex-col items-center mb-8">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-tr from-violet-600 to-indigo-600 shadow-lg shadow-violet-500/20 mb-3">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-900 shadow-sm mb-3">
             <Shield className="h-6 w-6 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Admin Portal</h1>
@@ -87,8 +83,8 @@ export default function AdminLoginPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-white border border-slate-300 focus:border-violet-500 rounded-xl px-4 py-3 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-violet-500 transition"
-              placeholder="admin@paisawin.online"
+              className="w-full bg-white border border-slate-300 focus:border-slate-900 rounded-xl px-4 py-3 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-900 transition"
+              placeholder="admin@ads2pub.com"
             />
           </div>
 
@@ -100,7 +96,7 @@ export default function AdminLoginPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-white border border-slate-300 focus:border-violet-500 rounded-xl px-4 py-3 pr-11 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-violet-500 transition"
+                className="w-full bg-white border border-slate-300 focus:border-slate-900 rounded-xl px-4 py-3 pr-11 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-900 transition"
                 placeholder="••••••••"
               />
               <button
@@ -116,7 +112,7 @@ export default function AdminLoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-medium rounded-xl py-3 shadow-lg shadow-violet-600/15 hover:shadow-violet-600/25 active:scale-[0.98] transition disabled:opacity-50 disabled:pointer-events-none mt-8"
+            className="w-full flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-medium rounded-xl py-3 shadow-sm active:scale-[0.98] transition disabled:opacity-50 disabled:pointer-events-none mt-8"
           >
             {loading ? (
               <>

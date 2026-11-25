@@ -9,7 +9,9 @@
     "lint": "eslint",
     "db:reset": "tsx ./prisma/reset.ts",
     "db:seed": "tsx ./prisma/seed.ts",
+    "db:seed:trial": "tsx ./prisma/seed-trial.ts",
     "test:conversions": "tsx ./scripts/acceptance-conversions.ts",
+    "test:prd": "tsx ./scripts/acceptance-prd.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {

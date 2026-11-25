@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
+import { InstallAppButton } from '@/components/PwaManager'
 import {
   LayoutDashboard,
   Link2,
@@ -15,10 +16,10 @@ import {
 } from 'lucide-react'
 
 const navItems = [
-  { href: '/publisher/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/publisher/links', label: 'My Links', icon: Link2 },
-  { href: '/publisher/earnings', label: 'Earnings', icon: TrendingUp },
-  { href: '/publisher/withdraw', label: 'Withdraw', icon: Wallet },
+  { href: '/publisher/dashboard', label: 'Dashboard', shortLabel: 'Home', icon: LayoutDashboard },
+  { href: '/publisher/links', label: 'My Links', shortLabel: 'Links', icon: Link2 },
+  { href: '/publisher/earnings', label: 'Earnings', shortLabel: 'Earnings', icon: TrendingUp },
+  { href: '/publisher/withdraw', label: 'Withdraw', shortLabel: 'Withdraw', icon: Wallet },
 ]
 
 // Public pages that share this layout but must not show the authenticated nav.
@@ -29,33 +30,48 @@ export default function PublisherSidebar() {
   const router = useRouter()
   const [open, setOpen] = useState(false)
 
-  // Rendering the nav here would prefetch every protected route while the
-  // visitor is still logged out. Middleware answers each prefetch with a
-  // redirect to /publisher/login, those redirects land in the client router
-  // cache, and the post-login router.push() then replays them — bouncing the
-  // user straight back to the login page.
   if (publicPaths.includes(pathname)) return null
 
   const handleLogout = async () => {
-    // Clear cookie by hitting auth logout or removing it client-side
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' })
+    } catch {
+      // Fallback cookie clear below
+    }
     document.cookie = 'pub_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT'
+    try {
+      sessionStorage.clear()
+    } catch {
+      // Ignore storage access errors
+    }
     router.push('/publisher/login')
+    router.refresh()
   }
 
   return (
     <>
-      {/* Mobile Toggle */}
-      <button
-        className="fixed top-4 left-4 z-50 flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-700 shadow-md border border-slate-200 lg:hidden"
-        onClick={() => setOpen(!open)}
-      >
-        {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-      </button>
+      {/* Mobile Top Bar */}
+      <header className="fixed top-0 left-0 right-0 z-30 flex h-14 items-center justify-between bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 lg:hidden">
+        <button
+          aria-label={open ? 'Close navigation menu' : 'Open navigation menu'}
+          className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 text-slate-700 border border-slate-200"
+          onClick={() => setOpen(!open)}
+        >
+          {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        </button>
+        <div className="flex items-center gap-2">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
+            <Zap className="h-3.5 w-3.5 text-white" />
+          </div>
+          <span className="font-bold text-slate-900 text-sm">Ads2Pub</span>
+        </div>
+        <InstallAppButton compact />
+      </header>
 
       {/* Backdrop */}
       {open && (
         <div
-          className="fixed inset-0 z-30 bg-slate-900/30 lg:hidden"
+          className="fixed inset-0 z-30 bg-slate-900/40 lg:hidden"
           onClick={() => setOpen(false)}
         />
       )}
@@ -66,17 +82,17 @@ export default function PublisherSidebar() {
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        {/* Logo */}
         <div className="flex items-center gap-2 px-6 py-5 border-b border-slate-200">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600">
             <Zap className="h-4 w-4 text-white" />
           </div>
           <span className="text-lg font-bold text-slate-900">Ads2Pub</span>
-          <span className="ml-auto text-xs font-medium text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">Publisher</span>
+          <span className="ml-auto text-xs font-medium text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">
+            Publisher
+          </span>
         </div>
 
-        {/* Nav */}
-        <nav className="flex-1 overflow-y-auto p-4 space-y-1">
+        <nav aria-label="Publisher Navigation" className="flex-1 overflow-y-auto p-4 space-y-1">
           {navItems.map(({ href, label, icon: Icon }) => {
             const active = pathname === href || pathname.startsWith(href + '/')
             return (
@@ -97,8 +113,8 @@ export default function PublisherSidebar() {
           })}
         </nav>
 
-        {/* Logout */}
-        <div className="p-4 border-t border-slate-200">
+        <div className="p-4 border-t border-slate-200 space-y-2">
+          <InstallAppButton />
           <button
             onClick={handleLogout}
             className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-slate-500 hover:bg-red-50 hover:text-red-600 transition-all"
@@ -108,6 +124,28 @@ export default function PublisherSidebar() {
           </button>
         </div>
       </aside>
+
+      {/* Mobile Bottom Navigation */}
+      <nav
+        aria-label="Mobile Quick Navigation"
+        className="fixed bottom-0 left-0 right-0 z-30 flex items-center justify-around bg-white/95 backdrop-blur-md border-t border-slate-200 px-2 py-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] lg:hidden"
+      >
+        {navItems.map(({ href, shortLabel, icon: Icon }) => {
+          const active = pathname === href || pathname.startsWith(href + '/')
+          return (
+            <Link
+              key={href}
+              href={href}
+              className={`flex flex-col items-center justify-center gap-0.5 rounded-xl px-3 py-1.5 min-w-[64px] text-[11px] font-semibold transition ${
+                active ? 'text-blue-600 bg-blue-50' : 'text-slate-500'
+              }`}
+            >
+              <Icon className="h-4 w-4" />
+              <span>{shortLabel}</span>
+            </Link>
+          )
+        })}
+      </nav>
     </>
   )
 }

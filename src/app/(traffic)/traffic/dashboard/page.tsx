@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback, type ComponentType } from 'react'
+import Link from 'next/link'
 import {
   Wallet,
   MousePointerClick,
@@ -10,6 +11,9 @@ import {
   RefreshCw,
   Award,
   ArrowUpRight,
+  Clock,
+  CheckCircle2,
+  CreditCard,
 } from 'lucide-react'
 
 interface Earning {
@@ -21,7 +25,21 @@ interface Earning {
 }
 
 interface DashboardData {
+  timezone: string
+  todayDate: string
+  yesterdayDate: string
   walletBalance: string
+  availableBalance: number
+  pendingPayment: number
+  totalPaid: number
+  todayClicks: number
+  todayValidClicks: number
+  todayEarnings: number
+  yesterdayEarnings: number
+  yesterdaySettlementStatus: string
+  minWithdrawal: number
+  canWithdraw: boolean
+  shortfallToMin: number
   totalClicks: number
   uniqueClicks: number
   totalConversions: number
@@ -35,43 +53,68 @@ export default function TrafficDashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  const fetchDashboard = async () => {
+  const loadDashboard = useCallback(async () => {
+    const res = await fetch('/api/traffic/dashboard')
+    const json = await res.json()
+    if (!res.ok || !json.success) {
+      throw new Error(json.error || 'Failed to fetch traffic statistics')
+    }
+    return json.data as DashboardData
+  }, [])
+
+  const fetchDashboard = useCallback(async () => {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch('/api/traffic/dashboard')
-      const json = await res.json()
-      if (!res.ok || !json.success) {
-        throw new Error(json.error || 'Failed to fetch traffic statistics')
-      }
-      setData(json.data)
-    } catch (err: any) {
-      setError(err.message || 'Something went wrong')
+      const next = await loadDashboard()
+      setData(next)
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Something went wrong')
     } finally {
       setLoading(false)
     }
-  }
+  }, [loadDashboard])
 
   useEffect(() => {
-    fetchDashboard()
-  }, [])
+    let active = true
+    loadDashboard()
+      .then((next) => { if (active) setData(next) })
+      .catch((err: unknown) => {
+        if (active) setError(err instanceof Error ? err.message : 'Something went wrong')
+      })
+      .finally(() => { if (active) setLoading(false) })
+    return () => { active = false }
+  }, [loadDashboard])
+
+  const minW = data?.minWithdrawal ?? 15
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Traffic Dashboard</h1>
-          <p className="text-slate-500 mt-1">Real-time stats and performance metrics</p>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Traffic Dashboard</h1>
+          <p className="text-slate-500 mt-1 text-sm">
+            IST real-time performance, next-day settlement &amp; payout tracking
+          </p>
         </div>
-        <button
-          onClick={fetchDashboard}
-          disabled={loading}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 hover:text-slate-900 hover:bg-slate-100 active:scale-95 transition disabled:opacity-50"
-        >
-          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-          Refresh Stats
-        </button>
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <Link
+            href="/traffic/withdraw"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-teal-600 text-white hover:bg-teal-700 text-sm font-semibold shadow-sm transition"
+          >
+            <CreditCard className="h-4 w-4" />
+            Withdraw
+          </Link>
+          <button
+            onClick={() => void fetchDashboard()}
+            disabled={loading}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 hover:text-slate-900 hover:bg-slate-100 active:scale-95 transition disabled:opacity-50 text-sm font-medium"
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -80,46 +123,78 @@ export default function TrafficDashboard() {
         </div>
       )}
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-6">
+      {/* Settlement & Payout Financial Strip */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <StatCard
-          title="Wallet Balance"
-          value={`$${Number(data?.walletBalance ?? 0).toFixed(2)}`}
+          title="Available Balance"
+          value={`$${Number(data?.availableBalance ?? data?.walletBalance ?? 0).toFixed(2)}`}
+          subtext={
+            data?.canWithdraw
+              ? `Ready for payout (min $${minW.toFixed(2)})`
+              : `$${Number(data?.shortfallToMin ?? minW).toFixed(2)} more to reach $${minW.toFixed(2)} min`
+          }
           icon={Wallet}
-          gradient="from-teal-500/10 to-emerald-500/5"
-          border="border-teal-200"
+          accent="border-teal-200 bg-teal-50 text-teal-700"
           loading={loading}
         />
         <StatCard
+          title="Today's Earnings (IST)"
+          value={`$${Number(data?.todayEarnings ?? 0).toFixed(2)}`}
+          subtext={`${data?.todayClicks ?? 0} clicks today · settles next day IST`}
+          icon={Clock}
+          accent="border-amber-200 bg-amber-50 text-amber-700"
+          loading={loading}
+        />
+        <StatCard
+          title="Yesterday's Earnings"
+          value={`$${Number(data?.yesterdayEarnings ?? 0).toFixed(2)}`}
+          subtext={
+            data?.yesterdaySettlementStatus === 'SETTLED'
+              ? 'Settled to Available Balance'
+              : 'Pending daily settlement'
+          }
+          icon={CheckCircle2}
+          accent="border-emerald-200 bg-emerald-50 text-emerald-700"
+          loading={loading}
+        />
+        <StatCard
+          title="Pending / Total Paid"
+          value={`$${Number(data?.pendingPayment ?? 0).toFixed(2)}`}
+          subtext={`Total Paid: $${Number(data?.totalPaid ?? 0).toFixed(2)} · Window 12–2 PM IST`}
+          icon={TrendingUp}
+          accent="border-blue-200 bg-blue-50 text-blue-700"
+          loading={loading}
+        />
+      </div>
+
+      {/* Traffic Metrics Row */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard
           title="Total Clicks"
-          value={data?.totalClicks ?? 0}
+          value={(data?.totalClicks ?? 0).toLocaleString()}
           icon={MousePointerClick}
-          gradient="from-blue-500/10 to-cyan-500/5"
-          border="border-blue-200"
+          accent="border-slate-200 bg-slate-50 text-slate-700"
           loading={loading}
         />
         <StatCard
           title="Unique Clicks"
-          value={data?.uniqueClicks ?? 0}
+          value={(data?.uniqueClicks ?? 0).toLocaleString()}
           icon={Users}
-          gradient="from-indigo-500/10 to-violet-500/5"
-          border="border-indigo-200"
+          accent="border-sky-200 bg-sky-50 text-sky-700"
           loading={loading}
         />
         <StatCard
           title="Conversions"
-          value={data?.totalConversions ?? 0}
+          value={(data?.totalConversions ?? 0).toLocaleString()}
           icon={Target}
-          gradient="from-orange-500/10 to-amber-500/5"
-          border="border-orange-200"
+          accent="border-amber-200 bg-amber-50 text-amber-700"
           loading={loading}
         />
         <StatCard
-          title="Total Earned"
+          title="Lifetime Earned"
           value={`$${Number(data?.totalEarned ?? 0).toFixed(2)}`}
-          icon={TrendingUp}
-          gradient="from-emerald-500/10 to-green-500/5"
-          border="border-emerald-200"
+          icon={Award}
+          accent="border-emerald-200 bg-emerald-50 text-emerald-700"
           loading={loading}
         />
       </div>
@@ -225,28 +300,31 @@ export default function TrafficDashboard() {
 interface StatCardProps {
   title: string
   value: string | number
-  icon: any
-  gradient: string
-  border: string
+  subtext?: string
+  icon: ComponentType<{ className?: string }>
+  accent: string
   loading: boolean
 }
 
-function StatCard({ title, value, icon: Icon, gradient, border, loading }: StatCardProps) {
+function StatCard({ title, value, subtext, icon: Icon, accent, loading }: StatCardProps) {
   return (
-    <div className={`bg-white border border-slate-200 rounded-2xl p-5 relative overflow-hidden transition-all duration-300 hover:translate-y-[-2px] hover:border-slate-300 ${border}`}>
-      <div className={`absolute top-0 right-0 w-24 h-24 rounded-full blur-[30px] opacity-45 pointer-events-none bg-gradient-to-br ${gradient}`} />
-
-      <div className="flex items-start justify-between relative z-10">
-        <div>
+    <div className="bg-white border border-slate-200 rounded-2xl p-5 transition-colors hover:border-slate-300">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
           <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider">{title}</p>
           {loading ? (
             <div className="h-8 w-20 bg-slate-200 rounded-lg animate-pulse mt-2" />
           ) : (
-            <h4 className="text-xl lg:text-2xl font-bold text-slate-900 tracking-tight mt-1 truncate">{value}</h4>
+            <h4 className="text-xl lg:text-2xl font-bold font-mono tabular-nums text-slate-900 tracking-tight mt-1 truncate">
+              {value}
+            </h4>
+          )}
+          {subtext && !loading && (
+            <p className="text-xs text-slate-500 mt-1.5 leading-snug">{subtext}</p>
           )}
         </div>
-        <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
-          <Icon className="h-4 w-4 text-slate-600" />
+        <div className={`p-2.5 border rounded-xl shrink-0 ${accent}`}>
+          <Icon className="h-4 w-4" />
         </div>
       </div>
     </div>

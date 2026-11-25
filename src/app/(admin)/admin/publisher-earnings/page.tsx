@@ -1,17 +1,21 @@
 'use client'
 
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import { BarChart2, RefreshCw, Calendar, AlertCircle, Search } from 'lucide-react'
 
 interface EarningRow {
   publisherId: string
   publisherName: string
   publisherEmail: string
+  availableBalance?: number
+  pendingBalance?: number
   date: string
   impressions: number
+  validClicks?: number
   conversions: number
   cpmRate: number
   earnings: number
+  settlementStatus?: string
 }
 
 function toDateStr(d: Date) {
@@ -24,27 +28,46 @@ export default function AdminPublisherEarningsPage() {
   const [error, setError] = useState('')
   const [dateFilter, setDateFilter] = useState('')
   const [search, setSearch] = useState('')
+  const [today] = useState(() => toDateStr(new Date(Date.now() + 5.5 * 3600000)))
+  const [yesterday] = useState(() => toDateStr(new Date(Date.now() + 5.5 * 3600000 - 86400000)))
 
-  const fetchEarnings = async () => {
+  const loadEarnings = useCallback(async (date: string) => {
+    const params = date ? `?date=${date}` : ''
+    const res = await fetch(`/api/admin/publisher-earnings${params}`)
+    const json = await res.json()
+    if (!res.ok || !json.success) throw new Error(json.error || 'Failed to load earnings')
+    return (json.data || []) as EarningRow[]
+  }, [])
+
+  const fetchEarnings = useCallback(async () => {
     setLoading(true)
     setError('')
     try {
-      const params = dateFilter ? `?date=${dateFilter}` : ''
-      const res = await fetch(`/api/admin/publisher-earnings${params}`)
-      const json = await res.json()
-      if (!res.ok || !json.success) throw new Error(json.error || 'Failed to load earnings')
-      setRows(json.data || [])
-    } catch (err: any) {
-      setError(err.message || 'Something went wrong')
+      const next = await loadEarnings(dateFilter)
+      setRows(next)
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Something went wrong')
     } finally {
       setLoading(false)
     }
-  }
+  }, [dateFilter, loadEarnings])
 
-  useEffect(() => { fetchEarnings() }, [dateFilter])
-
-  const today = toDateStr(new Date())
-  const yesterday = toDateStr(new Date(Date.now() - 86400000))
+  useEffect(() => {
+    let active = true
+    Promise.resolve().then(() => {
+      if (!active) return
+      setLoading(true)
+      setError('')
+      return loadEarnings(dateFilter)
+    }).then((next) => {
+      if (active && next) setRows(next)
+    }).catch((err: unknown) => {
+      if (active) setError(err instanceof Error ? err.message : 'Something went wrong')
+    }).finally(() => {
+      if (active) setLoading(false)
+    })
+    return () => { active = false }
+  }, [dateFilter, loadEarnings])
 
   const filtered = useMemo(() =>
     rows.filter(r =>
@@ -146,8 +169,8 @@ export default function AdminPublisherEarningsPage() {
         </div>
       )}
 
-      {/* Table */}
-      <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
+      {/* Desktop Table */}
+      <div className="hidden xl:block bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -157,6 +180,7 @@ export default function AdminPublisherEarningsPage() {
                 <th className="px-6 py-4 text-right">Impressions</th>
                 <th className="px-6 py-4 text-right">Leads</th>
                 <th className="px-6 py-4 text-right">CPM Rate</th>
+                <th className="px-6 py-4 text-center">Settlement</th>
                 <th className="px-6 py-4 text-right">Earnings</th>
               </tr>
             </thead>
@@ -164,12 +188,12 @@ export default function AdminPublisherEarningsPage() {
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i} className="animate-pulse">
-                    <td className="px-6 py-5" colSpan={6}><div className="h-4 bg-slate-200 rounded w-full" /></td>
+                    <td className="px-6 py-5" colSpan={7}><div className="h-4 bg-slate-200 rounded w-full" /></td>
                   </tr>
                 ))
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td className="px-6 py-12 text-center text-slate-400" colSpan={6}>
+                  <td className="px-6 py-12 text-center text-slate-400" colSpan={7}>
                     <div className="flex flex-col items-center gap-2">
                       <AlertCircle className="h-8 w-8 text-slate-300" />
                       <span>No earnings data found for the selected filters</span>
@@ -191,6 +215,11 @@ export default function AdminPublisherEarningsPage() {
                         ${row.cpmRate.toFixed(2)} CPM
                       </span>
                     </td>
+                    <td className="px-6 py-4 text-center">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 border border-slate-200 text-slate-700">
+                        {row.settlementStatus ?? '—'}
+                      </span>
+                    </td>
                     <td className="px-6 py-4 text-right font-mono font-bold text-slate-900">${row.earnings.toFixed(4)}</td>
                   </tr>
                 ))
@@ -198,6 +227,56 @@ export default function AdminPublisherEarningsPage() {
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Tablet & Mobile Cards */}
+      <div className="xl:hidden grid grid-cols-1 md:grid-cols-2 gap-3.5">
+        {loading ? (
+          Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="bg-white border border-slate-200 rounded-2xl p-4 animate-pulse space-y-2">
+              <div className="h-4 bg-slate-200 rounded w-1/2" />
+              <div className="h-3 bg-slate-200 rounded w-1/3" />
+            </div>
+          ))
+        ) : filtered.length === 0 ? (
+          <div className="col-span-full bg-white border border-slate-200 rounded-2xl p-8 text-center text-slate-400 text-sm">
+            No earnings data found for the selected filters
+          </div>
+        ) : (
+          filtered.map((row, idx) => (
+            <div key={idx} className="bg-white border border-slate-200 rounded-2xl p-4 space-y-3">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="font-semibold text-slate-900 text-sm truncate">{row.publisherName}</p>
+                  <p className="text-xs text-slate-400 truncate">{row.publisherEmail}</p>
+                </div>
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 border border-slate-200 text-slate-700 shrink-0">
+                  {row.settlementStatus ?? '—'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-xs text-slate-500">
+                <span>{formatDate(row.date)}</span>
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full font-semibold bg-emerald-50 border border-emerald-200 text-emerald-700">
+                  ${row.cpmRate.toFixed(2)} CPM
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-xs">
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-2">
+                  <span className="text-slate-500 block">Impr.</span>
+                  <span className="font-mono font-bold text-slate-800">{row.impressions.toLocaleString()}</span>
+                </div>
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-2">
+                  <span className="text-slate-500 block">Leads</span>
+                  <span className="font-mono font-bold text-blue-600">{row.conversions.toLocaleString()}</span>
+                </div>
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-2">
+                  <span className="text-slate-500 block">Earnings</span>
+                  <span className="font-mono font-bold text-emerald-600">${row.earnings.toFixed(4)}</span>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   )

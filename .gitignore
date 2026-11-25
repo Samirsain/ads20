@@ -40,3 +40,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local AI skill tool folders
+/.agent/
+/.agents/
+/.claude/
+/.codex/
+/.gemini/

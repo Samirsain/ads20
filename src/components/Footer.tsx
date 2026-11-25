@@ -18,7 +18,7 @@ export default function Footer() {
               <span className="text-lg font-normal text-zinc-900">Ads2Pub</span>
             </div>
             <p className="text-xs text-zinc-500 leading-normal max-w-sm font-normal">
-              Ads2Pub is a high-performance smart traffic monetization system connecting social media networks to optimized CPA campaigns. Get paid automatically every week.
+              Ads2Pub is a high-performance smart traffic monetization system connecting social media networks to optimized campaigns. Next-day settlement with daily payouts ($15 minimum).
             </p>
           </div>
 

@@ -37,7 +37,7 @@ const STEPS = [
     icon: Wallet,
     step: "05",
     title: "Wallet Credit & Payouts",
-    description: "Generated commission aapke wallet balance me transfer kar diya jayega jise har Monday automatic payout schedule se withdraw kar sakte hain.",
+    description: "Validated earnings next calendar day (IST) wallet balance me settle ho jaate hain jise $15.00 minimum par daily 12–2 PM IST payout window me withdraw kar sakte hain.",
     glow: "bg-rose-600",
   },
 ];

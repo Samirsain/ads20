@@ -1,5 +1,8 @@
 import { prisma } from '@/lib/prisma'
+import type { Prisma } from '@prisma/client'
 import { getAdminFromRequest, unauthorizedResponse } from '@/lib/apiAuth'
+import { APP_TIMEZONE, dateIn, dayRange, isDateStr } from '@/lib/appTime'
+import { microsToNumber, toMicros } from '@/lib/money'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
@@ -16,65 +19,105 @@ export async function GET(request: NextRequest) {
     const admin = getAdminFromRequest(request)
     if (!admin) return unauthorizedResponse()
 
-    const dateParam = request.nextUrl.searchParams.get('date') // YYYY-MM-DD
-    const publisherIdParam = request.nextUrl.searchParams.get('publisherId')
+    const params = request.nextUrl.searchParams
+    const dateParam = params.get('date')
+    const fromParam = params.get('from')
+    const toParam = params.get('to')
+    const publisherIdParam = params.get('publisherId')?.trim() || undefined
 
-    const clickWhere: Record<string, any> = {}
-    const convWhere: Record<string, any> = {}
+    const range = isDateStr(dateParam)
+      ? dayRange(dateParam, dateParam)
+      : dayRange(fromParam, toParam)
 
-    if (dateParam) {
-      clickWhere.timestamp = {
-        gte: new Date(`${dateParam}T00:00:00.000Z`),
-        lt: new Date(`${dateParam}T23:59:59.999Z`),
-      }
-      convWhere.createdAt = {
-        gte: new Date(`${dateParam}T00:00:00.000Z`),
-        lt: new Date(`${dateParam}T23:59:59.999Z`),
-      }
+    const clickWhere: Prisma.ClickWhereInput = {
+      ...(range && { timestamp: range }),
+      ...(publisherIdParam && { publisherId: publisherIdParam }),
     }
-    if (publisherIdParam) {
-      clickWhere.publisherId = publisherIdParam
-      convWhere.publisherId = publisherIdParam
+    const convWhere: Prisma.ConversionWhereInput = {
+      isValid: true,
+      ...(range && { createdAt: range }),
+      ...(publisherIdParam && { publisherId: publisherIdParam }),
     }
 
-    const [publishers, clicks, conversions] = await Promise.all([
-      prisma.publisher.findMany({ select: { id: true, name: true, email: true } }),
-      prisma.click.findMany({ where: clickWhere, select: { publisherId: true, timestamp: true } }),
-      prisma.conversion.findMany({ where: convWhere, select: { publisherId: true, createdAt: true } }),
+    const [publishers, clicks, conversions, settlements] = await Promise.all([
+      prisma.publisher.findMany({
+        select: { id: true, name: true, email: true, walletBalance: true, reservedBalance: true },
+      }),
+      prisma.click.findMany({
+        where: clickWhere,
+        select: { publisherId: true, isValid: true, timestamp: true },
+      }),
+      prisma.conversion.findMany({
+        where: convWhere,
+        select: { publisherId: true, amount: true, settlementId: true, createdAt: true },
+      }),
+      prisma.dailySettlement.findMany({
+        where: { accountType: 'PUBLISHER' },
+        select: { accountId: true, settlementDate: true, status: true },
+      }),
     ])
 
-    const impMap = new Map<string, number>()
+    const impMap = new Map<string, { total: number; valid: number }>()
     for (const c of clicks) {
-      const date = c.timestamp.toISOString().slice(0, 10)
+      const date = dateIn(c.timestamp)
       const key = `${c.publisherId}|${date}`
-      impMap.set(key, (impMap.get(key) ?? 0) + 1)
+      const cur = impMap.get(key) ?? { total: 0, valid: 0 }
+      cur.total += 1
+      if (c.isValid) cur.valid += 1
+      impMap.set(key, cur)
     }
 
-    const convMap = new Map<string, number>()
+    const convMap = new Map<string, { count: number; micros: bigint }>()
     for (const c of conversions) {
-      const date = c.createdAt.toISOString().slice(0, 10)
+      const date = dateIn(c.createdAt)
       const key = `${c.publisherId}|${date}`
-      convMap.set(key, (convMap.get(key) ?? 0) + 1)
+      const cur = convMap.get(key) ?? { count: 0, micros: 0n }
+      cur.count += 1
+      cur.micros += toMicros(c.amount)
+      convMap.set(key, cur)
     }
 
-    const pubById = Object.fromEntries(publishers.map(p => [p.id, p]))
+    const settlementMap = new Map(
+      settlements.map((s) => [`${s.accountId}|${s.settlementDate}`, s.status])
+    )
+    const pubById = Object.fromEntries(publishers.map((p) => [p.id, p]))
     const allKeys = new Set([...impMap.keys(), ...convMap.keys()])
 
     const rows = Array.from(allKeys)
-      .map(key => {
+      .map((key) => {
         const [publisherId, date] = key.split('|')
         const pub = pubById[publisherId]
         if (!pub) return null
-        const imp = impMap.get(key) ?? 0
-        const conv = convMap.get(key) ?? 0
+        const imp = impMap.get(key)?.total ?? 0
+        const validClicks = impMap.get(key)?.valid ?? 0
+        const conv = convMap.get(key)?.count ?? 0
+        const actualEarnings = microsToNumber(convMap.get(key)?.micros ?? 0n, 4)
         const cpmRate = computeCpmRate(imp, conv)
-        const earnings = parseFloat(((imp / 1000) * cpmRate).toFixed(4))
-        return { publisherId, publisherName: pub.name, publisherEmail: pub.email, date, impressions: imp, conversions: conv, cpmRate, earnings }
+        return {
+          publisherId,
+          publisherName: pub.name,
+          publisherEmail: pub.email,
+          availableBalance: Number(pub.walletBalance),
+          pendingBalance: Number(pub.reservedBalance),
+          date,
+          impressions: imp,
+          validClicks,
+          conversions: conv,
+          cpmRate,
+          earnings: actualEarnings,
+          settlementStatus:
+            settlementMap.get(`${publisherId}|${date}`) ??
+            (actualEarnings > 0 ? 'PENDING_SETTLEMENT' : 'NONE'),
+        }
       })
-      .filter(Boolean)
-      .sort((a, b) => (b!.date > a!.date ? 1 : b!.date < a!.date ? -1 : 0))
+      .filter((r): r is NonNullable<typeof r> => r !== null)
+      .sort((a, b) => (b.date > a.date ? 1 : b.date < a.date ? -1 : b.earnings - a.earnings))
 
-    return NextResponse.json({ success: true, data: rows })
+    return NextResponse.json({
+      success: true,
+      timezone: APP_TIMEZONE,
+      data: rows,
+    })
   } catch (error) {
     console.error('[admin/publisher-earnings GET]', error)
     return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 })

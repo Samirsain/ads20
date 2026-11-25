@@ -14,11 +14,11 @@ const SUPPORTED_METHODS = [
 ];
 
 const BENEFITS = [
-  "Weekly Payments (processed every Monday)",
-  "Automatic Processing (no manual claim required)",
-  "Transparent Reporting (accurate logs)",
-  "Real-Time Earnings Tracking (live balance updates)",
-  "Multiple Withdrawal Options (USDT to Local Bank)",
+  "Daily Payments (12:00 PM – 2:00 PM IST)",
+  "Low $15.00 Minimum Withdrawal Threshold",
+  "Next-Day Settlement of Validated Earnings",
+  "Transparent Reporting & Ledger Audit Logs",
+  "Multiple Withdrawal Options (USDT TRC20/ERC20/BEP20)",
 ];
 
 export default function PaymentsSection() {
@@ -31,13 +31,13 @@ export default function PaymentsSection() {
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-16">
           <span className="text-xs font-normal uppercase tracking-wider text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
-            Automatic Payment Schedule
+            Daily Payment Schedule
           </span>
           <h2 className="mt-4 text-3xl font-normal tracking-tight text-zinc-900 sm:text-4xl">
-            Weekly Automatic Payouts
+            Daily Payouts at $15 Minimum
           </h2>
           <p className="mt-4 text-zinc-600 font-normal">
-            Ads2Pub believes in fast and transparent payouts. Weekly schedules calculate your traffic commissions and send rewards automatically.
+            Ads2Pub calculates today&apos;s valid traffic in IST and settles eligible earnings the next day for daily payout processing between 12:00 PM and 2:00 PM IST.
           </p>
         </div>
 
@@ -61,17 +61,17 @@ export default function PaymentsSection() {
               <div className="space-y-4 relative pl-4 border-l border-zinc-200 ml-2">
                 <div className="relative">
                   <div className="absolute -left-[21px] top-1 h-2.5 w-2.5 rounded-full bg-blue-600 ring-4 ring-blue-100" />
-                  <h4 className="text-sm font-normal text-zinc-800">Monday to Monday Calculation</h4>
+                  <h4 className="text-sm font-normal text-zinc-800">Today&apos;s Valid Traffic &rarr; Next-Day Eligible</h4>
                   <p className="text-xs text-zinc-600 mt-1 font-normal leading-relaxed">
-                    Aapki weekly earnings Monday subah se agle Monday subah tak automatically calculate ki jaati hain.
+                    Aaj ka validated traffic IST day close par settle hota hai aur agle din withdrawal ke liye available ho jata hai.
                   </p>
                 </div>
                 
                 <div className="relative">
                   <div className="absolute -left-[21px] top-1 h-2.5 w-2.5 rounded-full bg-emerald-600 ring-4 ring-emerald-100" />
-                  <h4 className="text-sm font-normal text-zinc-800">Monday Automatic Payout</h4>
+                  <h4 className="text-sm font-normal text-zinc-800">Daily Payout Window (12:00 PM – 2:00 PM IST)</h4>
                   <p className="text-xs text-zinc-600 mt-1 font-normal leading-relaxed">
-                    Monday ko payout automatically system dwara initiate hota hai aur selected gateway se direct trigger kiya jata hai.
+                    Minimum $15.00 balance hone par aap roz payout request kar sakte hain, jo 12 PM–2 PM IST batch me process hota hai.
                   </p>
                 </div>
 
@@ -133,7 +133,7 @@ export default function PaymentsSection() {
             </div>
 
             <div className="mt-6 pt-4 border-t border-zinc-200 text-center">
-              <span className="text-[11px] text-zinc-400 font-normal block">Minimum threshold limit starts at $1,000 only!</span>
+              <span className="text-[11px] text-zinc-500 font-normal block">Minimum withdrawal threshold starts at $15.00 USD · Daily processing 12–2 PM IST</span>
             </div>
 
           </div>

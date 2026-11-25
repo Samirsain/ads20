@@ -1,6 +1,6 @@
-import { prisma } from '@/lib/prisma'
 import { getAdminFromRequest, unauthorizedResponse } from '@/lib/apiAuth'
 import { updateWithdrawalSchema } from '@/lib/validators'
+import { transitionWithdrawalStatus, WithdrawalError } from '@/lib/withdrawals'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
@@ -25,78 +25,28 @@ export async function PATCH(
       )
     }
 
-    const { status, note } = result.data
+    const { status, note, txReference, failureReason, idempotencyKey } = result.data
 
-    // 1. Try to find in PubWithdrawal table first
-    const pubWithdrawal = await prisma.pubWithdrawal.findUnique({ where: { id } })
+    const transitioned = await transitionWithdrawalStatus({
+      id,
+      targetStatus: status,
+      adminId: admin.adminId,
+      adminEmail: admin.email,
+      note,
+      txReference,
+      failureReason,
+      idempotencyKey,
+    })
 
-    if (pubWithdrawal) {
-      if (pubWithdrawal.status !== 'PENDING' && pubWithdrawal.status !== 'PROCESSING') {
-        return NextResponse.json(
-          { success: false, error: 'Withdrawal is already processed' },
-          { status: 400 }
-        )
-      }
-
-      if (status === 'REJECTED') {
-        // Refund amount to publisher wallet balance
-        await prisma.$transaction([
-          prisma.pubWithdrawal.update({
-            where: { id },
-            data: { status, processedAt: new Date(), note },
-          }),
-          prisma.publisher.update({
-            where: { id: pubWithdrawal.publisherId },
-            data: { walletBalance: { increment: pubWithdrawal.amount } },
-          }),
-        ])
-      } else {
-        await prisma.pubWithdrawal.update({
-          where: { id },
-          data: { status, processedAt: new Date(), note },
-        })
-      }
-
-      const updated = await prisma.pubWithdrawal.findUnique({ where: { id } })
-      return NextResponse.json({ success: true, data: updated })
-    }
-
-    // 2. Try to find in TrafficWithdrawal table
-    const trafficWithdrawal = await prisma.trafficWithdrawal.findUnique({ where: { id } })
-
-    if (trafficWithdrawal) {
-      if (trafficWithdrawal.status !== 'PENDING' && trafficWithdrawal.status !== 'PROCESSING') {
-        return NextResponse.json(
-          { success: false, error: 'Withdrawal is already processed' },
-          { status: 400 }
-        )
-      }
-
-      if (status === 'REJECTED') {
-        // Refund amount to traffic user wallet balance
-        await prisma.$transaction([
-          prisma.trafficWithdrawal.update({
-            where: { id },
-            data: { status, processedAt: new Date(), note },
-          }),
-          prisma.trafficUser.update({
-            where: { id: trafficWithdrawal.userId },
-            data: { walletBalance: { increment: trafficWithdrawal.amount } },
-          }),
-        ])
-      } else {
-        await prisma.trafficWithdrawal.update({
-          where: { id },
-          data: { status, processedAt: new Date(), note },
-        })
-      }
-
-      const updated = await prisma.trafficWithdrawal.findUnique({ where: { id } })
-      return NextResponse.json({ success: true, data: updated })
-    }
-
-    return NextResponse.json({ success: false, error: 'Withdrawal request not found' }, { status: 404 })
+    return NextResponse.json({
+      success: true,
+      data: transitioned.withdrawal,
+      idempotentHit: transitioned.idempotentHit,
+    })
   } catch (error) {
+    if (error instanceof WithdrawalError) {
+      return NextResponse.json({ success: false, error: error.message }, { status: error.status })
+    }
     console.error('[admin/withdrawals PATCH]', error)
     return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 })
   }

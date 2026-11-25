@@ -1,19 +1,10 @@
 import { prisma } from '@/lib/prisma'
 import { getAdminFromRequest, unauthorizedResponse } from '@/lib/apiAuth'
+import { APP_TIMEZONE, dayRange, isDateStr } from '@/lib/appTime'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 export const dynamic = 'force-dynamic'
-
-function getDateRange(dateStr: string | null): { gte: Date; lt: Date } | undefined {
-  if (!dateStr) return undefined
-  const [year, month, day] = dateStr.split('-').map(Number)
-  const istOffsetMs = 5.5 * 60 * 60 * 1000
-  const startIST = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0))
-  const gte = new Date(startIST.getTime() - istOffsetMs)
-  const lt = new Date(gte.getTime() + 24 * 60 * 60 * 1000)
-  return { gte, lt }
-}
 
 export async function GET(request: NextRequest) {
   try {
@@ -22,11 +13,11 @@ export async function GET(request: NextRequest) {
 
     const searchParams = request.nextUrl.searchParams
     const dateStr = searchParams.get('date')
-    const dateRange = getDateRange(dateStr)
+    const validDate = isDateStr(dateStr) ? dateStr : null
+    const dateRange = validDate ? dayRange(validDate, validDate) : undefined
 
-    const whereClause = dateRange ? { createdAt: dateRange } : {}
+    const whereClause = dateRange ? { createdAt: dateRange, isValid: true } : { isValid: true }
 
-    // Get all traffic earnings grouped by user
     const earningsByUser = await prisma.trafficEarning.groupBy({
       by: ['userId'],
       where: whereClause,
@@ -35,11 +26,10 @@ export async function GET(request: NextRequest) {
       orderBy: { _sum: { amount: 'desc' } },
     })
 
-    // Get user details for all user IDs
     const userIds = earningsByUser.map((e) => e.userId)
     const users = await prisma.trafficUser.findMany({
       where: { id: { in: userIds } },
-      select: { id: true, name: true, email: true, phone: true, walletBalance: true },
+      select: { id: true, name: true, email: true, phone: true, walletBalance: true, reservedBalance: true },
     })
 
     const userMap = Object.fromEntries(users.map((u) => [u.id, u]))
@@ -51,7 +41,6 @@ export async function GET(request: NextRequest) {
       conversions: e._count.id,
     }))
 
-    // Platform totals for the date
     const [platformTotal, totalConversions] = await Promise.all([
       prisma.trafficEarning.aggregate({
         where: whereClause,
@@ -63,7 +52,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: {
-        filterDate: dateStr ?? null,
+        timezone: APP_TIMEZONE,
+        filterDate: validDate,
         platformTotal: Number(platformTotal._sum.amount ?? 0),
         totalConversions,
         users: data,

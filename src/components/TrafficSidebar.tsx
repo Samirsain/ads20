@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
+import { InstallAppButton } from '@/components/PwaManager'
 import {
   LayoutDashboard,
   Link2,
@@ -15,13 +16,12 @@ import {
 } from 'lucide-react'
 
 const navItems = [
-  { href: '/traffic/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/traffic/links', label: 'Traffic Links', icon: Link2 },
-  { href: '/traffic/earnings', label: 'Earnings', icon: TrendingUp },
-  { href: '/traffic/withdraw', label: 'Withdraw', icon: Wallet },
+  { href: '/traffic/dashboard', label: 'Dashboard', shortLabel: 'Home', icon: LayoutDashboard },
+  { href: '/traffic/links', label: 'Traffic Links', shortLabel: 'Links', icon: Link2 },
+  { href: '/traffic/earnings', label: 'Earnings', shortLabel: 'Earnings', icon: TrendingUp },
+  { href: '/traffic/withdraw', label: 'Withdraw', shortLabel: 'Withdraw', icon: Wallet },
 ]
 
-// Public pages that share this layout but must not show the authenticated nav.
 const publicPaths = ['/traffic/login', '/traffic/register']
 
 export default function TrafficSidebar() {
@@ -29,51 +29,66 @@ export default function TrafficSidebar() {
   const router = useRouter()
   const [open, setOpen] = useState(false)
 
-  // See PublisherSidebar: rendering the nav on a public page prefetches the
-  // protected routes while logged out, and the resulting cached redirects
-  // bounce the user back to login after a successful sign-in.
   if (publicPaths.includes(pathname)) return null
 
   const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' })
+    } catch {
+      // Fallback
+    }
     document.cookie = 'traffic_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT'
+    try {
+      sessionStorage.clear()
+    } catch {
+      // Ignore
+    }
     router.push('/traffic/login')
+    router.refresh()
   }
 
   return (
     <>
-      {/* Mobile Toggle */}
-      <button
-        className="fixed top-4 left-4 z-50 flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-700 shadow-md border border-slate-200 lg:hidden"
-        onClick={() => setOpen(!open)}
-      >
-        {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-      </button>
+      <header className="fixed top-0 left-0 right-0 z-30 flex h-14 items-center justify-between bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 lg:hidden">
+        <button
+          aria-label={open ? 'Close navigation menu' : 'Open navigation menu'}
+          className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 text-slate-700 border border-slate-200"
+          onClick={() => setOpen(!open)}
+        >
+          {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        </button>
+        <div className="flex items-center gap-2">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-600">
+            <Zap className="h-3.5 w-3.5 text-white" />
+          </div>
+          <span className="font-bold text-slate-900 text-sm">Ads2Pub</span>
+        </div>
+        <InstallAppButton compact />
+      </header>
 
-      {/* Backdrop */}
       {open && (
         <div
-          className="fixed inset-0 z-30 bg-slate-900/30 lg:hidden"
+          className="fixed inset-0 z-30 bg-slate-900/40 lg:hidden"
           onClick={() => setOpen(false)}
         />
       )}
 
-      {/* Sidebar */}
       <aside
         className={`fixed left-0 top-0 z-40 flex h-full w-64 flex-col bg-white border-r border-slate-200 shadow-sm transition-transform duration-300 lg:translate-x-0 ${
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        {/* Logo */}
         <div className="flex items-center gap-2 px-6 py-5 border-b border-slate-200">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600">
             <Zap className="h-4 w-4 text-white" />
           </div>
           <span className="text-lg font-bold text-slate-900">Ads2Pub</span>
-          <span className="ml-auto text-xs font-medium text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">Traffic</span>
+          <span className="ml-auto text-xs font-medium text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+            Traffic
+          </span>
         </div>
 
-        {/* Nav */}
-        <nav className="flex-1 overflow-y-auto p-4 space-y-1">
+        <nav aria-label="Traffic Navigation" className="flex-1 overflow-y-auto p-4 space-y-1">
           {navItems.map(({ href, label, icon: Icon }) => {
             const active = pathname === href || pathname.startsWith(href + '/')
             return (
@@ -94,8 +109,8 @@ export default function TrafficSidebar() {
           })}
         </nav>
 
-        {/* Logout */}
-        <div className="p-4 border-t border-slate-200">
+        <div className="p-4 border-t border-slate-200 space-y-2">
+          <InstallAppButton />
           <button
             onClick={handleLogout}
             className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-slate-500 hover:bg-red-50 hover:text-red-600 transition-all"
@@ -105,6 +120,27 @@ export default function TrafficSidebar() {
           </button>
         </div>
       </aside>
+
+      <nav
+        aria-label="Mobile Quick Navigation"
+        className="fixed bottom-0 left-0 right-0 z-30 flex items-center justify-around bg-white/95 backdrop-blur-md border-t border-slate-200 px-2 py-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] lg:hidden"
+      >
+        {navItems.map(({ href, shortLabel, icon: Icon }) => {
+          const active = pathname === href || pathname.startsWith(href + '/')
+          return (
+            <Link
+              key={href}
+              href={href}
+              className={`flex flex-col items-center justify-center gap-0.5 rounded-xl px-3 py-1.5 min-w-[64px] text-[11px] font-semibold transition ${
+                active ? 'text-emerald-600 bg-emerald-50' : 'text-slate-500'
+              }`}
+            >
+              <Icon className="h-4 w-4" />
+              <span>{shortLabel}</span>
+            </Link>
+          )
+        })}
+      </nav>
     </>
   )
 }

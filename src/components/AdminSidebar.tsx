@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
+import { InstallAppButton } from '@/components/PwaManager'
 import {
   LayoutDashboard,
   Users,
@@ -15,15 +16,19 @@ import {
   X,
   Shield,
   Activity,
+  CalendarRange,
+  CalendarClock,
 } from 'lucide-react'
 
 const navItems = [
   { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/admin/reports', label: 'Traffic Reports', icon: CalendarRange },
+  { href: '/admin/settlement', label: 'Payout Batch', icon: CalendarClock },
+  { href: '/admin/withdrawals', label: 'Withdrawals', icon: Wallet },
   { href: '/admin/publishers', label: 'Publishers', icon: Users },
   { href: '/admin/conversions', label: 'Conversions', icon: Activity },
-  { href: '/admin/earnings', label: 'Traffic Earnings', icon: BarChart3 },
   { href: '/admin/publisher-earnings', label: 'Pub Earnings', icon: BarChart2 },
-  { href: '/admin/withdrawals', label: 'Withdrawals', icon: Wallet },
+  { href: '/admin/earnings', label: 'Traffic Earnings', icon: BarChart3 },
   { href: '/admin/settings', label: 'Settings', icon: Settings },
 ]
 
@@ -41,18 +46,41 @@ export default function AdminSidebar() {
   if (publicPaths.includes(pathname)) return null
 
   const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' })
+    } catch {
+      // Fallback
+    }
     document.cookie = 'admin_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT'
+    try {
+      sessionStorage.clear()
+    } catch {
+      // Ignore
+    }
     router.push('/admin/login')
+    router.refresh()
   }
 
   return (
     <>
-      <button
-        className="fixed top-4 left-4 z-50 flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-700 shadow-md border border-slate-200 lg:hidden"
-        onClick={() => setOpen(!open)}
-      >
-        {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-      </button>
+      {/* Unified Mobile Top Bar */}
+      <header className="fixed top-0 left-0 right-0 z-30 flex h-14 items-center justify-between bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 lg:hidden">
+        <button
+          aria-label={open ? 'Close admin menu' : 'Open admin menu'}
+          className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 text-slate-700 border border-slate-200"
+          onClick={() => setOpen(!open)}
+        >
+          {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        </button>
+        <div className="flex items-center gap-2">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-900">
+            <Shield className="h-3.5 w-3.5 text-white" />
+          </div>
+          <span className="font-bold text-slate-900 text-sm">Ads2Pub</span>
+          <span className="text-[11px] font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-full">Admin</span>
+        </div>
+        <InstallAppButton compact />
+      </header>
 
       {open && (
         <div className="fixed inset-0 z-30 bg-slate-900/30 lg:hidden" onClick={() => setOpen(false)} />
@@ -92,7 +120,8 @@ export default function AdminSidebar() {
           })}
         </nav>
 
-        <div className="p-4 border-t border-slate-200">
+        <div className="p-4 border-t border-slate-200 space-y-2">
+          <InstallAppButton />
           <button
             onClick={handleLogout}
             className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-slate-500 hover:bg-red-50 hover:text-red-600 transition-all"

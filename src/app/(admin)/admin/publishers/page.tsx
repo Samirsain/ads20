@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { Users, CheckCircle, XCircle, Search, RefreshCw, AlertCircle, MousePointerClick } from 'lucide-react'
 
@@ -26,22 +26,27 @@ export default function AdminPublishersPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null)
 
-  const fetchPublishers = async () => {
+  const loadPublishers = useCallback(async () => {
+    const res = await fetch('/api/admin/publishers')
+    const data = await res.json()
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || 'Failed to fetch publishers')
+    }
+    return (data.data.publishers || []) as Publisher[]
+  }, [])
+
+  const fetchPublishers = useCallback(async () => {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch('/api/admin/publishers')
-      const data = await res.json()
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || 'Failed to fetch publishers')
-      }
-      setPublishers(data.data.publishers || [])
-    } catch (err: any) {
-      setError(err.message || 'Something went wrong')
+      const next = await loadPublishers()
+      setPublishers(next)
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Something went wrong')
     } finally {
       setLoading(false)
     }
-  }
+  }, [loadPublishers])
 
   const toggleActiveStatus = async (id: string, currentStatus: boolean) => {
     setActionLoadingId(id)
@@ -60,16 +65,23 @@ export default function AdminPublishersPage() {
       setPublishers((prev) =>
         prev.map((pub) => (pub.id === id ? { ...pub, isActive: !currentStatus } : pub))
       )
-    } catch (err: any) {
-      alert(err.message || 'Error updating publisher')
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Error updating publisher')
     } finally {
       setActionLoadingId(null)
     }
   }
 
   useEffect(() => {
-    fetchPublishers()
-  }, [])
+    let active = true
+    loadPublishers()
+      .then((next) => { if (active) setPublishers(next) })
+      .catch((err: unknown) => {
+        if (active) setError(err instanceof Error ? err.message : 'Something went wrong')
+      })
+      .finally(() => { if (active) setLoading(false) })
+    return () => { active = false }
+  }, [loadPublishers])
 
   const filteredPublishers = publishers.filter(
     (pub) =>
@@ -119,7 +131,7 @@ export default function AdminPublishersPage() {
       )}
 
       {/* Desktop Table */}
-      <div className="hidden md:block bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
+      <div className="hidden xl:block bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -227,8 +239,8 @@ export default function AdminPublishersPage() {
         </div>
       </div>
 
-      {/* Mobile Cards */}
-      <div className="md:hidden space-y-3">
+      {/* Tablet & Mobile Cards */}
+      <div className="xl:hidden grid grid-cols-1 md:grid-cols-2 gap-3.5">
         {loading ? (
           Array.from({ length: 3 }).map((_, i) => (
             <div key={i} className="bg-white border border-slate-200 rounded-2xl p-4 animate-pulse">
@@ -259,7 +271,7 @@ export default function AdminPublishersPage() {
               </span>
             </div>
             {/* Stats grid */}
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               <div className="bg-slate-50 rounded-xl p-2 text-center border border-slate-200">
                 <p className="text-slate-400 text-xs mb-0.5">Balance</p>
                 <p className="font-mono font-bold text-slate-900 text-xs">${Number(pub.walletBalance).toFixed(2)}</p>

@@ -29,10 +29,11 @@ async function main() {
   // postback is checked against a hardcoded fallback secret and conversions
   // silently fail with "Invalid secret".
   const defaultConfig: Record<string, string> = {
-    min_withdrawal: '50',
+    min_withdrawal: '15.00',
     postback_secret: 'your-postback-secret-key-for-dev',
     pub_earn_amount: '0.05',
     traffic_earn_amount: '3.00',
+    landing_page_url: 'https://paisawin.online/register',
   }
 
   for (const [key, value] of Object.entries(defaultConfig)) {

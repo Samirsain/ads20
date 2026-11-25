@@ -158,7 +158,7 @@ export default function EarningCalculator() {
                     <span className="text-xs font-normal uppercase tracking-wider">Daily Income</span>
                   </div>
                   <div className="text-right">
-                    <span className="text-lg font-normal text-zinc-900">${dailyEarnings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    <span className="text-lg font-normal text-zinc-900">${dailyEarnings.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
                 </div>
 
@@ -168,7 +168,7 @@ export default function EarningCalculator() {
                     <span className="text-xs font-normal uppercase tracking-wider">Weekly Payout</span>
                   </div>
                   <div className="text-right">
-                    <span className="text-2xl font-normal text-emerald-600">${weeklyEarnings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    <span className="text-2xl font-normal text-emerald-600">${weeklyEarnings.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
                 </div>
 
@@ -178,7 +178,7 @@ export default function EarningCalculator() {
                     <span className="text-xs font-normal uppercase tracking-wider">Monthly Earnings</span>
                   </span>
                   <div className="text-right">
-                    <span className="text-lg font-normal text-zinc-900">${monthlyEarnings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    <span className="text-lg font-normal text-zinc-900">${monthlyEarnings.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
                 </div>
               </div>
@@ -188,7 +188,7 @@ export default function EarningCalculator() {
             <div className="mt-8 pt-4 border-t border-zinc-200 flex gap-2 items-start text-xs text-zinc-500">
               <CreditCard className="h-4 w-4 shrink-0 text-blue-600 mt-0.5" />
               <span className="leading-normal">
-                Weekly payouts are processed automatically every Monday. Minimum withdrawal: $1,000.
+                Daily payouts are processed between 12:00 PM and 2:00 PM IST. Minimum withdrawal: $15.00 USD.
               </span>
             </div>
 

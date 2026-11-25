@@ -119,11 +119,29 @@ async function creditPublisher(
           externalUserId: p.uid,
           amount: earnAmount,
           status: 'CONFIRMED',
+          isValid: true,
         },
       })
-      await tx.publisher.update({
+      const pub = await tx.publisher.findUniqueOrThrow({
         where: { id: link.publisherId },
-        data: { walletBalance: { increment: earnAmount } },
+        select: { walletBalance: true, reservedBalance: true },
+      })
+      // Next-day settlement: today's valid earnings accrue in Today's Earnings and
+      // are settled into available walletBalance on the following IST calendar day.
+      await tx.ledgerTransaction.create({
+        data: {
+          accountType: 'PUBLISHER',
+          accountId: link.publisherId,
+          entryType: 'EARNING_ACCRUED',
+          direction: 'MEMO',
+          amount: created.amount,
+          balanceAfter: pub.walletBalance,
+          reservedAfter: pub.reservedBalance,
+          referenceType: 'CONVERSION',
+          referenceId: created.id,
+          idempotencyKey: `accrual:CONVERSION:${created.id}`,
+          note: 'Validated conversion accrued (eligible for next-day IST settlement)',
+        },
       })
       await tx.conversionEvent.create({
         data: { ...meta, ...attributed, outcome: 'CREDITED', reason, conversionId: created.id },
@@ -166,27 +184,44 @@ async function creditTraffic(
   const earnAmount = parseFloat(earnConfig?.value ?? '3.00')
 
   try {
-    await prisma.$transaction([
-      prisma.trafficEarning.create({
+    await prisma.$transaction(async (tx) => {
+      const created = await tx.trafficEarning.create({
         data: {
           userId: trafficLink.userId,
           trafficLinkId: trafficLink.id,
           externalUserId: p.uid,
           amount: earnAmount,
+          isValid: true,
         },
-      }),
-      prisma.trafficUser.update({
+      })
+      const user = await tx.trafficUser.findUniqueOrThrow({
         where: { id: trafficLink.userId },
-        data: { walletBalance: { increment: earnAmount } },
-      }),
-      prisma.trafficLink.update({
+        select: { walletBalance: true, reservedBalance: true },
+      })
+      await tx.trafficLink.update({
         where: { id: trafficLink.id },
         data: { conversions: { increment: 1 } },
-      }),
-      prisma.conversionEvent.create({
+      })
+      // Next-day settlement: accrued today, settled into available walletBalance next IST day.
+      await tx.ledgerTransaction.create({
+        data: {
+          accountType: 'TRAFFIC',
+          accountId: trafficLink.userId,
+          entryType: 'EARNING_ACCRUED',
+          direction: 'MEMO',
+          amount: created.amount,
+          balanceAfter: user.walletBalance,
+          reservedAfter: user.reservedBalance,
+          referenceType: 'TRAFFIC_EARNING',
+          referenceId: created.id,
+          idempotencyKey: `accrual:TRAFFIC_EARNING:${created.id}`,
+          note: 'Validated traffic earning accrued (eligible for next-day IST settlement)',
+        },
+      })
+      await tx.conversionEvent.create({
         data: { ...meta, ...ok, outcome: 'CREDITED', reason: 'credited' },
-      }),
-    ])
+      })
+    })
     return { ...ok, outcome: 'CREDITED', reason: 'credited', credited: earnAmount, logged: true }
   } catch (error) {
     if (isUniqueViolation(error)) return { ...ok, outcome: 'DUPLICATE', reason: 'duplicate' }
