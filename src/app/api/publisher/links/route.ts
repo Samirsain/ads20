@@ -1,48 +1,22 @@
 import { prisma } from '@/lib/prisma'
 import { getPublisherFromRequest, unauthorizedResponse } from '@/lib/apiAuth'
 import { createLinkSchema } from '@/lib/validators'
+import { getAppUrl } from '@/lib/appUrl'
+import { getPublisherLinkList } from '@/lib/linkAnalytics'
 import { nanoid } from 'nanoid'
 import { NextResponse } from 'next/server'
-import { getAppUrl } from '@/lib/appUrl'
 import type { NextRequest } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
-// GET /api/publisher/links — list all tracking links
+// GET /api/publisher/links — list active/non-deleted tracking links with todayClicks & earnings
 export async function GET(request: NextRequest) {
   try {
     const publisher = getPublisherFromRequest(request)
     if (!publisher) return unauthorizedResponse()
 
-    const links = await prisma.trackingLink.findMany({
-      where: { publisherId: publisher.publisherId },
-      orderBy: { createdAt: 'desc' },
-      include: { _count: { select: { conversions: true } } },
-    })
-
     const appUrl = getAppUrl(request)
-
-    const data = links.map((link) => {
-      const impressions = link.clicks
-      // Used for the CPM maths only — conversion data is admin-only
-      const conversionsCount = link._count.conversions
-      const convRate = impressions > 0 ? (conversionsCount / impressions) * 100 : 0
-      const cpmRate = Math.max(0.5, Math.min(20, convRate))
-      const earnings = parseFloat(((impressions / 1000) * cpmRate).toFixed(4))
-
-      return {
-        id: link.id,
-        uniqueCode: link.uniqueCode,
-        targetUrl: link.targetUrl,
-        linkType: link.linkType,
-        clicks: link.clicks,
-        createdAt: link.createdAt,
-        trackingUrl: `${appUrl}/t/${link.uniqueCode}`,
-        cpmRate,
-        earnings,
-      }
-    })
-
+    const data = await getPublisherLinkList(publisher.publisherId, appUrl)
     return NextResponse.json({ success: true, data })
   } catch (error) {
     console.error('[publisher/links GET]', error)
@@ -50,7 +24,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/publisher/links — create a new tracking link
+// POST /api/publisher/links — create a new named tracking link
 export async function POST(request: NextRequest) {
   try {
     const publisher = getPublisherFromRequest(request)
@@ -60,7 +34,7 @@ export async function POST(request: NextRequest) {
     try {
       body = await request.json()
     } catch {
-      // Empty body allowed since all fields are optional or have defaults
+      // Empty body allowed when defaults are used
     }
 
     const result = createLinkSchema.safeParse(body)
@@ -71,37 +45,50 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { linkType } = result.data
+    const { linkType, name: rawName, targetUrl: customTargetUrl } = result.data
 
-    // Get landing page url from global config
-    const config = await prisma.globalConfig.findUnique({
-      where: { key: 'landing_page_url' },
-    })
-    const targetUrl = config?.value ?? 'https://paisawin.online/register'
+    let targetUrl = customTargetUrl?.trim()
+    if (!targetUrl) {
+      const config = await prisma.globalConfig.findUnique({
+        where: { key: 'landing_page_url' },
+      })
+      targetUrl = config?.value ?? 'https://paisawin.online/register'
+    }
 
-    const uniqueCode = nanoid(10)
+    const uniqueCode = nanoid(8)
+    const name = rawName?.trim() || `Link ${uniqueCode}`
     const appUrl = getAppUrl(request)
 
     const link = await prisma.trackingLink.create({
       data: {
         publisherId: publisher.publisherId,
+        name,
         uniqueCode,
         targetUrl,
         linkType,
+        isActive: true,
+        isDeleted: false,
       },
     })
+
+    const trackingUrl = `${appUrl}/t/${uniqueCode}`
 
     return NextResponse.json(
       {
         success: true,
         data: {
           id: link.id,
+          name: link.name,
           uniqueCode: link.uniqueCode,
           targetUrl: link.targetUrl,
           linkType: link.linkType,
           clicks: 0,
+          todayClicks: 0,
+          earnings: 0,
+          isActive: link.isActive,
           createdAt: link.createdAt,
-          link: `${appUrl}/t/${uniqueCode}`,
+          trackingUrl,
+          link: trackingUrl,
         },
       },
       { status: 201 }

@@ -25,14 +25,38 @@ export async function GET(
 
     const link = await prisma.trackingLink.findUnique({
       where: { uniqueCode: code },
+      select: { id: true, publisherId: true, targetUrl: true, isActive: true, isDeleted: true },
     })
 
-    if (!link) {
-      return new Response('Link not found', { status: 404 })
+    if (!link || !link.isActive || link.isDeleted) {
+      return new Response('Link not found or inactive', { status: 404 })
     }
 
     const userAgent = request.headers.get('user-agent') ?? ''
     const referrer = request.headers.get('referer') ?? ''
+    const country =
+      (
+        request.headers.get('x-vercel-ip-country') ||
+        request.headers.get('cf-ipcountry') ||
+        request.headers.get('x-country-code') ||
+        'Unknown'
+      )
+        .trim()
+        .slice(0, 64) || 'Unknown'
+
+    // Server-side duplicate click protection (cookie + 24h IP lookup on this link)
+    const hasClickCookie = request.cookies.get(`v_clk_${code}`)?.value === '1'
+    let isDuplicate = hasClickCookie
+    if (!isDuplicate) {
+      const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000)
+      const recent = await prisma.click.findFirst({
+        where: { trackingLinkId: link.id, ip, timestamp: { gte: since24h } },
+        select: { id: true },
+      })
+      isDuplicate = Boolean(recent)
+    }
+    const isValid = !isDuplicate
+
     // Generated up front so it can travel to PaisaWin and back on the postback.
     const clickId = nanoid(16)
 
@@ -47,12 +71,18 @@ export async function GET(
             ip,
             userAgent,
             referrer,
+            country,
+            isValid,
           },
         }),
-        prisma.trackingLink.update({
-          where: { id: link.id },
-          data: { clicks: { increment: 1 } },
-        }),
+        ...(isValid
+          ? [
+              prisma.trackingLink.update({
+                where: { id: link.id },
+                data: { clicks: { increment: 1 } },
+              }),
+            ]
+          : []),
       ]).catch((err) => console.error('[tracking click error]', err))
     )
 
@@ -62,12 +92,20 @@ export async function GET(
     targetUrl.searchParams.set('ref', code)
     targetUrl.searchParams.set('click_id', clickId)
 
+    const headers = new Headers()
+    headers.set('Location', targetUrl.toString())
+    headers.append(
+      'Set-Cookie',
+      `ref_code=${code}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${60 * 60 * 24 * 7}`
+    )
+    headers.append(
+      'Set-Cookie',
+      `v_clk_${code}=1; Path=/; HttpOnly; SameSite=Lax; Max-Age=${60 * 60 * 24}`
+    )
+
     return new Response(null, {
       status: 302,
-      headers: {
-        Location: targetUrl.toString(),
-        'Set-Cookie': `ref_code=${code}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${60 * 60 * 24 * 7}`,
-      },
+      headers,
     })
   } catch (err) {
     console.error('[t/[code] route error]', err)

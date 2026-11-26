@@ -60,10 +60,10 @@ export default function PublisherSidebar() {
           {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
         <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-tr from-[#155EEF] to-[#06B6D4]">
             <Zap className="h-3.5 w-3.5 text-white" />
           </div>
-          <span className="font-bold text-slate-900 text-sm">Ads2Pub</span>
+          <span className="font-bold text-[#101828] text-sm">Ads2Pub</span>
         </div>
         <InstallAppButton compact />
       </header>
@@ -83,11 +83,11 @@ export default function PublisherSidebar() {
         }`}
       >
         <div className="flex items-center gap-2 px-6 py-5 border-b border-slate-200">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-tr from-[#155EEF] to-[#06B6D4]">
             <Zap className="h-4 w-4 text-white" />
           </div>
-          <span className="text-lg font-bold text-slate-900">Ads2Pub</span>
-          <span className="ml-auto text-xs font-medium text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">
+          <span className="text-lg font-bold text-[#101828]">Ads2Pub</span>
+          <span className="ml-auto text-xs font-medium text-[#155EEF] bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full">
             Publisher
           </span>
         </div>
@@ -102,8 +102,8 @@ export default function PublisherSidebar() {
                 onClick={() => setOpen(false)}
                 className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all ${
                   active
-                    ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
-                    : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
+                    ? 'bg-gradient-to-r from-[#155EEF] to-[#06B6D4] text-white shadow-sm'
+                    : 'text-slate-600 hover:bg-slate-100 hover:text-[#101828]'
                 }`}
               >
                 <Icon className="h-4 w-4 shrink-0" />

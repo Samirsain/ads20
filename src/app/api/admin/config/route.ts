@@ -39,6 +39,15 @@ export async function POST(request: NextRequest) {
     }
 
     const { key, value } = result.data
+    if (key === 'min_withdrawal') {
+      const parsedMin = Number(value)
+      if (!Number.isFinite(parsedMin) || parsedMin < 15) {
+        return NextResponse.json(
+          { success: false, error: 'Minimum withdrawal limit cannot be less than $15.00 USD' },
+          { status: 400 }
+        )
+      }
+    }
     const config = await prisma.globalConfig.upsert({
       where: { key },
       update: { value },

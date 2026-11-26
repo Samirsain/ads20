@@ -1,7 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { getPublisherFromRequest, unauthorizedResponse } from '@/lib/apiAuth'
-import { APP_TIMEZONE, dateIn, todayIST } from '@/lib/appTime'
-import { microsToNumber, toMicros } from '@/lib/money'
+import { APP_TIMEZONE, todayIST } from '@/lib/appTime'
 import { getAccountFinancialSummary } from '@/lib/settlement'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
@@ -14,6 +13,18 @@ function computeCpmRate(impressions: number, actions: number): number {
   return Math.max(0.5, Math.min(20, rate))
 }
 
+interface ClickDayAgg {
+  day: string
+  total: bigint | number
+  valid: bigint | number
+}
+
+interface ConvDayAgg {
+  day: string
+  actions: bigint | number
+  earnings: string | number | null
+}
+
 export async function GET(request: NextRequest) {
   try {
     const publisher = getPublisherFromRequest(request)
@@ -21,15 +32,26 @@ export async function GET(request: NextRequest) {
 
     const publisherId = publisher.publisherId
 
-    const [clicks, rows, settlements, summary] = await Promise.all([
-      prisma.click.findMany({
-        where: { publisherId },
-        select: { timestamp: true, isValid: true },
-      }),
-      prisma.conversion.findMany({
-        where: { publisherId, isValid: true },
-        select: { createdAt: true, amount: true, settlementId: true },
-      }),
+    const [clickAgg, convAgg, settlements, summary] = await Promise.all([
+      prisma.$queryRaw<ClickDayAgg[]>`
+        SELECT
+          to_char("timestamp" AT TIME ZONE ${APP_TIMEZONE}, 'YYYY-MM-DD') AS day,
+          COUNT(*)::bigint AS total,
+          COUNT(*) FILTER (WHERE "isValid" = true)::bigint AS valid
+        FROM "Click"
+        WHERE "publisherId" = ${publisherId}
+        GROUP BY 1
+      `,
+      prisma.$queryRaw<ConvDayAgg[]>`
+        SELECT
+          to_char("createdAt" AT TIME ZONE ${APP_TIMEZONE}, 'YYYY-MM-DD') AS day,
+          COUNT(*)::bigint AS actions,
+          COALESCE(SUM("amount"), 0)::text AS earnings
+        FROM "Conversion"
+        WHERE "publisherId" = ${publisherId}
+          AND "isValid" = true
+        GROUP BY 1
+      `,
       prisma.dailySettlement.findMany({
         where: { accountType: 'PUBLISHER', accountId: publisherId },
         select: { settlementDate: true, status: true },
@@ -37,40 +59,25 @@ export async function GET(request: NextRequest) {
       getAccountFinancialSummary('PUBLISHER', publisherId),
     ])
 
-    const impByDate = new Map<string, { total: number; valid: number }>()
-    for (const c of clicks) {
-      const date = dateIn(c.timestamp)
-      const prev = impByDate.get(date) ?? { total: 0, valid: 0 }
-      prev.total += 1
-      if (c.isValid) prev.valid += 1
-      impByDate.set(date, prev)
-    }
-
-    const countByDate = new Map<string, number>()
-    const earnMicrosByDate = new Map<string, bigint>()
-    const unsettledByDate = new Map<string, number>()
-    for (const r of rows) {
-      const date = dateIn(r.createdAt)
-      countByDate.set(date, (countByDate.get(date) ?? 0) + 1)
-      earnMicrosByDate.set(date, (earnMicrosByDate.get(date) ?? 0n) + toMicros(r.amount))
-      if (!r.settlementId) {
-        unsettledByDate.set(date, (unsettledByDate.get(date) ?? 0) + 1)
-      }
-    }
-
+    const impByDate = new Map(
+      clickAgg.map((r) => [r.day, { total: Number(r.total), valid: Number(r.valid) }])
+    )
+    const convByDate = new Map(
+      convAgg.map((r) => [r.day, { actions: Number(r.actions), earnings: Number(r.earnings ?? 0) }])
+    )
     const settlementMap = new Map(settlements.map((s) => [s.settlementDate, s.status]))
     const today = todayIST()
 
-    const allDates = new Set([...impByDate.keys(), ...countByDate.keys()])
+    const allDates = new Set([...impByDate.keys(), ...convByDate.keys()])
     const dailyData = Array.from(allDates)
       .sort()
       .reverse()
       .map((date) => {
         const imp = impByDate.get(date)?.total ?? 0
         const validClicks = impByDate.get(date)?.valid ?? 0
-        const actions = countByDate.get(date) ?? 0
+        const actions = convByDate.get(date)?.actions ?? 0
         const cpmRate = computeCpmRate(imp, actions)
-        const earnings = microsToNumber(earnMicrosByDate.get(date) ?? 0n, 4)
+        const earnings = parseFloat((convByDate.get(date)?.earnings ?? 0).toFixed(4))
 
         let settlementStatus = settlementMap.get(date) ?? 'NONE'
         if (settlementStatus === 'NONE' && earnings > 0) {
@@ -82,15 +89,16 @@ export async function GET(request: NextRequest) {
       })
 
     const totalImpressions = Array.from(impByDate.values()).reduce((a, b) => a + b.total, 0)
-    const totalEarnings = microsToNumber(
-      Array.from(earnMicrosByDate.values()).reduce((a, b) => a + b, 0n),
-      2
+    const totalEarnings = parseFloat(
+      Array.from(convByDate.values())
+        .reduce((a, b) => a + b.earnings, 0)
+        .toFixed(2)
     )
 
     const todayImp = impByDate.get(today)?.total ?? 0
-    const todayActions = countByDate.get(today) ?? 0
+    const todayActions = convByDate.get(today)?.actions ?? 0
     const currentCpm = computeCpmRate(todayImp, todayActions)
-    const todayEarnings = microsToNumber(earnMicrosByDate.get(today) ?? 0n, 4)
+    const todayEarnings = parseFloat((convByDate.get(today)?.earnings ?? 0).toFixed(4))
 
     return NextResponse.json({
       success: true,

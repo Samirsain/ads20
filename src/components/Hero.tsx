@@ -7,35 +7,30 @@ import { ArrowRight, Play, Zap, Users, TrendingUp, DollarSign } from "lucide-rea
 
 export default function Hero() {
   return (
-    <section className="relative overflow-hidden pt-20 pb-16 md:pt-32 md:pb-24">
-      {/* Background decoration */}
-      <div className="absolute inset-0 grid-pattern opacity-60" />
-      <div className="absolute top-1/4 left-1/2 -z-10 h-72 w-72 -translate-x-1/2 rounded-full bg-blue-500/10 blur-3xl glow-orb animate-glow" />
-      <div className="absolute top-1/3 left-1/4 -z-10 h-96 w-96 rounded-full bg-indigo-500/5 blur-3xl glow-orb" />
-
+    <section className="relative overflow-hidden pt-20 pb-16 md:pt-32 md:pb-24 bg-[#F8FAFC]">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center relative z-10">
 
         {/* Banner Tag */}
         <div
-          className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-4 py-1.5 text-xs sm:text-sm font-medium text-blue-700 shadow-sm"
+          className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-4 py-1.5 text-xs sm:text-sm font-medium text-[#155EEF] shadow-xs"
         >
-          <Zap className="h-3.5 w-3.5 fill-blue-600 text-blue-600" />
+          <Zap className="h-3.5 w-3.5 fill-[#155EEF] text-[#155EEF]" />
           <span>Turn Your Traffic Into Revenue</span>
         </div>
 
         {/* Headline */}
         <h1
-          className="mt-6 text-4xl font-semibold tracking-tight text-zinc-950 sm:text-5xl md:text-6xl max-w-4xl mx-auto leading-tight"
+          className="mt-6 text-4xl font-bold tracking-tight text-[#101828] sm:text-5xl md:text-6xl max-w-4xl mx-auto leading-tight"
         >
           Social Traffic Ko Convert Karein <br className="hidden sm:inline" />
-          <span className="text-blue-600">
+          <span className="text-[#155EEF]">
             Real Revenue Me!
           </span>
         </h1>
 
         {/* Sub-headline */}
         <p
-          className="mt-6 text-base sm:text-lg md:text-xl text-zinc-600 max-w-2xl mx-auto leading-relaxed"
+          className="mt-6 text-base sm:text-lg md:text-xl text-slate-600 max-w-2xl mx-auto leading-relaxed"
         >
           Ads2Pub ek smart traffic monetization platform hai jo publishers ko unke social traffic ke liye suitable campaigns se connect karta hai.
         </p>
@@ -48,7 +43,7 @@ export default function Hero() {
             <motion.div
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-blue-600 px-8 py-4 text-base font-medium text-white shadow-lg shadow-blue-500/20 hover:bg-blue-700 transition-all cursor-pointer"
+              className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#155EEF] to-[#06B6D4] px-8 py-4 text-base font-semibold text-white shadow-md hover:opacity-95 transition-all cursor-pointer"
             >
               Start Earning Today
               <ArrowRight className="h-5 w-5" />

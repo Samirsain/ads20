@@ -15,25 +15,45 @@ export async function GET(
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown'
     const userAgent = request.headers.get('user-agent') || 'unknown'
 
-    // 1. Find TrafficLink by uniqueCode and verify active status
+    // 1. Find TrafficLink by uniqueCode and verify active/non-deleted status
     const trafficLink = await prisma.trafficLink.findUnique({
       where: { uniqueCode: code },
     })
 
-    if (!trafficLink || !trafficLink.isActive) {
+    if (!trafficLink || !trafficLink.isActive || trafficLink.isDeleted) {
       return NextResponse.redirect(new URL('/', request.url))
     }
 
-    // 2. Check Redis key for uniqueness over 24h
+    const country =
+      (
+        request.headers.get('x-vercel-ip-country') ||
+        request.headers.get('cf-ipcountry') ||
+        request.headers.get('x-country-code') ||
+        'Unknown'
+      )
+        .trim()
+        .slice(0, 64) || 'Unknown'
+
+    // 2. Check Redis + durable DB lookup for 24h duplicate click protection
     const redisKey = `traffic_click:${code}:${ip}`
     const keyExists = await redis.exists(redisKey)
-    const isUnique = keyExists === 0
+    let isUnique = keyExists === 0
+    if (isUnique && request.cookies.get(`t_clk_${code}`)?.value === '1') {
+      isUnique = false
+    } else if (isUnique) {
+      const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000)
+      const recent = await prisma.trafficClick.findFirst({
+        where: { trafficLinkId: trafficLink.id, ip, timestamp: { gte: since24h } },
+        select: { id: true },
+      })
+      if (recent) isUnique = false
+    }
 
     if (isUnique) {
       await redis.set(redisKey, '1', 'EX', 86400) // expire in 24 hours
     }
 
-    // 3. Create TrafficClick record (fire and forget / async to keep redirect fast)
+    // 3. Create TrafficClick record
     const device = parseUserAgent(userAgent)
     prisma.trafficClick
       .create({
@@ -41,6 +61,7 @@ export async function GET(
           trafficLinkId: trafficLink.id,
           ip,
           userAgent,
+          country,
           isUnique,
           device,
         },
@@ -70,7 +91,13 @@ export async function GET(
     response.cookies.set('traffic_ref', code, {
       maxAge: 60 * 60 * 24, // 1 day
       httpOnly: true,
-      secure: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+    })
+    response.cookies.set(`t_clk_${code}`, '1', {
+      maxAge: 60 * 60 * 24,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
     })
 

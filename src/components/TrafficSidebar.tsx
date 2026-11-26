@@ -58,10 +58,10 @@ export default function TrafficSidebar() {
           {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
         <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-600">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-tr from-[#155EEF] to-[#06B6D4]">
             <Zap className="h-3.5 w-3.5 text-white" />
           </div>
-          <span className="font-bold text-slate-900 text-sm">Ads2Pub</span>
+          <span className="font-bold text-[#101828] text-sm">Ads2Pub</span>
         </div>
         <InstallAppButton compact />
       </header>
@@ -79,11 +79,11 @@ export default function TrafficSidebar() {
         }`}
       >
         <div className="flex items-center gap-2 px-6 py-5 border-b border-slate-200">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-tr from-[#155EEF] to-[#06B6D4]">
             <Zap className="h-4 w-4 text-white" />
           </div>
-          <span className="text-lg font-bold text-slate-900">Ads2Pub</span>
-          <span className="ml-auto text-xs font-medium text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+          <span className="text-lg font-bold text-[#101828]">Ads2Pub</span>
+          <span className="ml-auto text-xs font-medium text-[#155EEF] bg-cyan-50 border border-cyan-200 px-2 py-0.5 rounded-full">
             Traffic
           </span>
         </div>
@@ -98,8 +98,8 @@ export default function TrafficSidebar() {
                 onClick={() => setOpen(false)}
                 className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all ${
                   active
-                    ? 'bg-emerald-600 text-white shadow-md shadow-emerald-500/20'
-                    : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
+                    ? 'bg-gradient-to-r from-[#155EEF] to-[#06B6D4] text-white shadow-sm'
+                    : 'text-slate-600 hover:bg-slate-100 hover:text-[#101828]'
                 }`}
               >
                 <Icon className="h-4 w-4 shrink-0" />

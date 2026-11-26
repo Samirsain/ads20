@@ -92,8 +92,8 @@ export default function AdminPublisherEarningsPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
-            <BarChart2 className="h-8 w-8 text-violet-600" />
+          <h1 className="text-3xl font-extrabold text-[#101828] tracking-tight flex items-center gap-2">
+            <BarChart2 className="h-8 w-8 text-[#155EEF]" />
             Publisher Earnings
           </h1>
           <p className="text-slate-500 mt-1">Daily CPM-based earnings breakdown for all publishers</p>
@@ -125,7 +125,7 @@ export default function AdminPublisherEarningsPage() {
             onClick={() => setDateFilter(value)}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
               dateFilter === value
-                ? 'bg-violet-600 text-white shadow-sm'
+                ? 'bg-gradient-to-r from-[#155EEF] to-[#06B6D4] text-white shadow-sm'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
             }`}
           >

@@ -12,11 +12,11 @@ export default function Navbar() {
 
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 shadow-md shadow-blue-500/10">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-[#155EEF] to-[#06B6D4] shadow-sm">
             <Layers className="h-5 w-5 text-white" />
           </div>
-          <span className="text-xl font-normal tracking-tight text-zinc-900">
-            Ads2<span className="text-blue-600">Pub</span>
+          <span className="text-xl font-bold tracking-tight text-[#101828]">
+            Ads2<span className="text-[#155EEF]">Pub</span>
           </span>
         </Link>
 
@@ -48,7 +48,7 @@ export default function Navbar() {
 
           <Link
             href="/publisher/register"
-            className="flex items-center gap-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 px-4 py-2 text-sm font-normal text-white shadow-sm transition-all"
+            className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#155EEF] to-[#06B6D4] hover:opacity-95 px-4 py-2 text-sm font-medium text-white shadow-sm transition-all"
           >
             Sign Up Free
           </Link>

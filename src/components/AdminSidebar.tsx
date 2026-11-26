@@ -7,6 +7,7 @@ import { InstallAppButton } from '@/components/PwaManager'
 import {
   LayoutDashboard,
   Users,
+  Link2,
   BarChart3,
   BarChart2,
   Wallet,
@@ -22,6 +23,7 @@ import {
 
 const navItems = [
   { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/admin/links', label: 'All Links', icon: Link2 },
   { href: '/admin/reports', label: 'Traffic Reports', icon: CalendarRange },
   { href: '/admin/settlement', label: 'Payout Batch', icon: CalendarClock },
   { href: '/admin/withdrawals', label: 'Withdrawals', icon: Wallet },
@@ -92,11 +94,11 @@ export default function AdminSidebar() {
         }`}
       >
         <div className="flex items-center gap-2 px-6 py-5 border-b border-slate-200">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-600">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-tr from-[#155EEF] to-[#06B6D4]">
             <Shield className="h-4 w-4 text-white" />
           </div>
-          <span className="text-lg font-bold text-slate-900">Ads2Pub</span>
-          <span className="ml-auto text-xs font-medium text-violet-700 bg-violet-100 px-2 py-0.5 rounded-full">Admin</span>
+          <span className="text-lg font-bold text-[#101828]">Ads2Pub</span>
+          <span className="ml-auto text-xs font-medium text-[#155EEF] bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full">Admin</span>
         </div>
 
         <nav className="flex-1 overflow-y-auto p-4 space-y-1">
@@ -109,8 +111,8 @@ export default function AdminSidebar() {
                 onClick={() => setOpen(false)}
                 className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all ${
                   active
-                    ? 'bg-violet-600 text-white shadow-md shadow-violet-500/20'
-                    : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
+                    ? 'bg-gradient-to-r from-[#155EEF] to-[#06B6D4] text-white shadow-sm'
+                    : 'text-slate-600 hover:bg-slate-100 hover:text-[#101828]'
                 }`}
               >
                 <Icon className="h-4 w-4 shrink-0" />

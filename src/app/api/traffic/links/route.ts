@@ -1,48 +1,22 @@
 import { prisma } from '@/lib/prisma'
 import { getTrafficUserFromRequest, unauthorizedResponse } from '@/lib/apiAuth'
 import { createTrafficLinkSchema } from '@/lib/validators'
+import { getAppUrl } from '@/lib/appUrl'
+import { getTrafficLinkList } from '@/lib/linkAnalytics'
 import { nanoid } from 'nanoid'
 import { NextResponse } from 'next/server'
-import { getAppUrl } from '@/lib/appUrl'
 import type { NextRequest } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
-// GET /api/traffic/links — list traffic links with aggregate stats
+// GET /api/traffic/links — list traffic links with todayClicks & aggregate stats
 export async function GET(request: NextRequest) {
   try {
     const user = getTrafficUserFromRequest(request)
     if (!user) return unauthorizedResponse()
 
-    const links = await prisma.trafficLink.findMany({
-      where: { userId: user.userId },
-      orderBy: { createdAt: 'desc' },
-      include: {
-        earnings: {
-          select: { amount: true }
-        }
-      }
-    })
-
     const appUrl = getAppUrl(request)
-
-    const data = links.map((link) => {
-      const earned = link.earnings.reduce((sum, e) => sum + Number(e.amount), 0)
-
-      return {
-        id: link.id,
-        uniqueCode: link.uniqueCode,
-        targetUrl: link.targetUrl,
-        totalClicks: link.totalClicks,
-        uniqueClicks: link.uniqueClicks,
-        conversions: link.conversions,
-        isActive: link.isActive,
-        createdAt: link.createdAt,
-        trackingUrl: `${appUrl}/send/${link.uniqueCode}`,
-        earned,
-      }
-    })
-
+    const data = await getTrafficLinkList(user.userId, appUrl)
     return NextResponse.json({ success: true, data })
   } catch (error) {
     console.error('[traffic/links GET]', error)
@@ -50,7 +24,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/traffic/links — create a new traffic link
+// POST /api/traffic/links — create a new named traffic link
 export async function POST(request: NextRequest) {
   try {
     const user = getTrafficUserFromRequest(request)
@@ -66,32 +40,40 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { targetUrl } = result.data
-    const uniqueCode = nanoid(10)
+    const { targetUrl, name: rawName } = result.data
+    const uniqueCode = nanoid(8)
+    const name = rawName?.trim() || `Traffic ${uniqueCode}`
     const appUrl = getAppUrl(request)
 
     const link = await prisma.trafficLink.create({
       data: {
         userId: user.userId,
+        name,
         uniqueCode,
         targetUrl,
         isActive: true,
+        isDeleted: false,
       },
     })
+
+    const trackingUrl = `${appUrl}/send/${uniqueCode}`
 
     return NextResponse.json(
       {
         success: true,
         data: {
           id: link.id,
+          name: link.name,
           uniqueCode: link.uniqueCode,
           targetUrl: link.targetUrl,
           totalClicks: 0,
+          todayClicks: 0,
           uniqueClicks: 0,
           conversions: 0,
           isActive: link.isActive,
           createdAt: link.createdAt,
-          link: `${appUrl}/send/${uniqueCode}`,
+          trackingUrl,
+          link: trackingUrl,
         },
       },
       { status: 201 }

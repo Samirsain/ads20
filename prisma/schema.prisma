@@ -35,13 +35,19 @@ model TrackingLink {
   id          String       @id @default(cuid())
   publisherId String
   publisher   Publisher    @relation(fields: [publisherId], references: [id])
+  name        String       @default("Untitled Link")
   uniqueCode  String       @unique
   targetUrl   String
   linkType    String       @default("direct")
   clicks      Int          @default(0)
+  isActive    Boolean      @default(true)
+  isDeleted   Boolean      @default(false)
   conversions Conversion[]
   clickEvents Click[]
   createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @default(now()) @updatedAt
+
+  @@index([publisherId, isDeleted, createdAt])
 }
 
 model Conversion {
@@ -134,15 +140,20 @@ model TrafficLink {
   id           String           @id @default(cuid())
   userId       String
   user         TrafficUser      @relation(fields: [userId], references: [id])
+  name         String           @default("Untitled Link")
   uniqueCode   String           @unique
   targetUrl    String
   totalClicks  Int              @default(0)
   uniqueClicks Int              @default(0)
   conversions  Int              @default(0)
   isActive     Boolean          @default(true)
+  isDeleted    Boolean          @default(false)
   clicks       TrafficClick[]
   earnings     TrafficEarning[]
   createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @default(now()) @updatedAt
+
+  @@index([userId, isDeleted, createdAt])
 }
 
 model TrafficClick {
@@ -157,6 +168,8 @@ model TrafficClick {
   timestamp     DateTime    @default(now())
 
   @@index([trafficLinkId, timestamp])
+  @@index([trafficLinkId, ip, timestamp])
+  @@index([trafficLinkId, country])
   @@index([timestamp])
 }
 
@@ -219,10 +232,14 @@ model Click {
   ip             String
   userAgent      String
   referrer       String       @default("")
+  country        String       @default("Unknown")
   isValid        Boolean      @default(true)
   timestamp      DateTime     @default(now())
 
   @@index([publisherId, timestamp])
+  @@index([trackingLinkId, timestamp])
+  @@index([trackingLinkId, ip, timestamp])
+  @@index([trackingLinkId, country])
   @@index([timestamp])
 }
 

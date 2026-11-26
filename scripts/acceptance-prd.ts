@@ -387,6 +387,82 @@ async function main() {
   assert.equal(iconRes.status, 200)
   pass('9. PWA manifest, non-caching service worker, offline page & icons verified')
 
+  // ── 11. Multiple Named Links, Edit/Delete, Analytics, Duplicate Click & Admin Links ──
+  const namedLinkRes = await api('/api/publisher/links', {
+    token: pubAToken,
+    body: { name: 'Bharat', targetUrl: 'https://paisawin.online/register?src=bharat', linkType: 'direct' },
+  })
+  assert.equal(namedLinkRes.status, 201)
+  const namedLink = namedLinkRes.json!.data as { id: string; uniqueCode: string; name: string }
+  assert.equal(namedLink.name, 'Bharat')
+
+  // Edit link name & destination URL
+  const editRes = await api(`/api/publisher/links/${namedLink.id}`, {
+    method: 'PATCH',
+    token: pubAToken,
+    body: { name: 'Bharat Edited', targetUrl: 'https://paisawin.online/register?src=bharat-v2' },
+  })
+  assert.equal(editRes.status, 200)
+  assert.equal((editRes.json!.data as { name: string }).name, 'Bharat Edited')
+
+  // Cross-user isolation: Publisher B cannot access/edit/delete Publisher A's link
+  assert.equal((await api(`/api/publisher/links/${namedLink.id}`, { token: pubB.token })).status, 404)
+  assert.equal(
+    (await api(`/api/publisher/links/${namedLink.id}`, { method: 'PATCH', token: pubB.token, body: { name: 'Hack' } })).status,
+    403
+  )
+  assert.equal((await api(`/api/publisher/links/${namedLink.id}`, { method: 'DELETE', token: pubB.token })).status, 403)
+
+  // Duplicate click protection from same IP + country header tracking
+  const sameIpHeaders = {
+    'x-forwarded-for': '203.0.113.77',
+    'x-vercel-ip-country': 'IN',
+  }
+  const click1 = await fetch(`${BASE}/t/${namedLink.uniqueCode}`, { redirect: 'manual', headers: sameIpHeaders })
+  assert.equal(click1.status, 302)
+  await new Promise((r) => setTimeout(r, 150))
+  const click2 = await fetch(`${BASE}/t/${namedLink.uniqueCode}`, { redirect: 'manual', headers: sameIpHeaders })
+  assert.equal(click2.status, 302)
+  await new Promise((r) => setTimeout(r, 150))
+
+  const afterDupClicks = await prisma.trackingLink.findUniqueOrThrow({ where: { id: namedLink.id } })
+  assert.equal(afterDupClicks.clicks, 1, 'Duplicate click from same IP within 24h must not increment clicks twice')
+
+  // Link analytics & publisher privacy check
+  const linkAnalyticsRes = await api(`/api/publisher/links/${namedLink.id}`, { token: pubAToken })
+  assert.equal(linkAnalyticsRes.status, 200)
+  const analyticsData = linkAnalyticsRes.json!.data as {
+    metrics: { totalClicks: number; todayClicks: number }
+    countryStats: Array<{ country: string; clicks: number }>
+  }
+  assert.equal(analyticsData.metrics.totalClicks, 1)
+  assert.equal(analyticsData.countryStats[0]?.country, 'IN')
+  assertNoConversionData(linkAnalyticsRes.json, [todayUid], 'publisher/links/[id]')
+
+  // Admin All Links & Disable / Enable + $15 min withdrawal floor enforcement
+  const adminLinksRes = await api('/api/admin/links?type=publisher', { token: adminToken })
+  assert.equal(adminLinksRes.status, 200)
+  const disableRes = await api(`/api/admin/links/${namedLink.id}`, {
+    method: 'PATCH',
+    token: adminToken,
+    body: { type: 'publisher', isActive: false },
+  })
+  assert.equal(disableRes.status, 200)
+  const disabledHit = await api(`/t/${namedLink.uniqueCode}`)
+  assert.equal(disabledHit.status, 404, 'Disabled link must refuse redirects')
+  await api(`/api/admin/links/${namedLink.id}`, {
+    method: 'PATCH',
+    token: adminToken,
+    body: { type: 'publisher', isActive: true },
+  })
+  assert.equal((await api('/api/admin/config', { token: adminToken, body: { key: 'min_withdrawal', value: '10.00' } })).status, 400)
+
+  // Soft-delete preserves historical clicks/earnings
+  const delRes = await api(`/api/publisher/links/${namedLink.id}`, { method: 'DELETE', token: pubAToken })
+  assert.equal(delRes.status, 200)
+  assert.equal((await api(`/t/${namedLink.uniqueCode}`)).status, 404)
+  pass('10. Named links CRUD, analytics, country breakdown, duplicate click protection & admin controls verified')
+
   // Restore default trial reward rate
   await api('/api/admin/config', { token: adminToken, body: { key: 'pub_earn_amount', value: '0.50' } })
   console.log(`\nALL ${passed.length} PRD ACCEPTANCE CHECKS PASSED.`)

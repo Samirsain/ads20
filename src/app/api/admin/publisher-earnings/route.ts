@@ -1,8 +1,7 @@
 import { prisma } from '@/lib/prisma'
-import type { Prisma } from '@prisma/client'
+import { Prisma } from '@prisma/client'
 import { getAdminFromRequest, unauthorizedResponse } from '@/lib/apiAuth'
-import { APP_TIMEZONE, dateIn, dayRange, isDateStr } from '@/lib/appTime'
-import { microsToNumber, toMicros } from '@/lib/money'
+import { APP_TIMEZONE, dayRange, isDateStr } from '@/lib/appTime'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
@@ -12,6 +11,20 @@ function computeCpmRate(impressions: number, conversions: number): number {
   if (impressions === 0) return 0.5
   const convRate = (conversions / impressions) * 100
   return Math.max(0.5, Math.min(20, convRate))
+}
+
+interface ClickGroupRow {
+  publisherId: string
+  day: string
+  total: bigint | number
+  valid: bigint | number
+}
+
+interface ConvGroupRow {
+  publisherId: string
+  day: string
+  count: bigint | number
+  earnings: string | number | null
 }
 
 export async function GET(request: NextRequest) {
@@ -29,54 +42,58 @@ export async function GET(request: NextRequest) {
       ? dayRange(dateParam, dateParam)
       : dayRange(fromParam, toParam)
 
-    const clickWhere: Prisma.ClickWhereInput = {
-      ...(range && { timestamp: range }),
-      ...(publisherIdParam && { publisherId: publisherIdParam }),
-    }
-    const convWhere: Prisma.ConversionWhereInput = {
-      isValid: true,
-      ...(range && { createdAt: range }),
-      ...(publisherIdParam && { publisherId: publisherIdParam }),
-    }
+    const clickConds: Prisma.Sql[] = [Prisma.sql`1=1`]
+    if (range?.gte) clickConds.push(Prisma.sql`"timestamp" >= ${range.gte}`)
+    if (range?.lt) clickConds.push(Prisma.sql`"timestamp" < ${range.lt}`)
+    if (publisherIdParam) clickConds.push(Prisma.sql`"publisherId" = ${publisherIdParam}`)
 
-    const [publishers, clicks, conversions, settlements] = await Promise.all([
+    const convConds: Prisma.Sql[] = [Prisma.sql`"isValid" = true`]
+    if (range?.gte) convConds.push(Prisma.sql`"createdAt" >= ${range.gte}`)
+    if (range?.lt) convConds.push(Prisma.sql`"createdAt" < ${range.lt}`)
+    if (publisherIdParam) convConds.push(Prisma.sql`"publisherId" = ${publisherIdParam}`)
+
+    const [publishers, clickGroups, convGroups, settlements] = await Promise.all([
       prisma.publisher.findMany({
         select: { id: true, name: true, email: true, walletBalance: true, reservedBalance: true },
       }),
-      prisma.click.findMany({
-        where: clickWhere,
-        select: { publisherId: true, isValid: true, timestamp: true },
-      }),
-      prisma.conversion.findMany({
-        where: convWhere,
-        select: { publisherId: true, amount: true, settlementId: true, createdAt: true },
-      }),
+      prisma.$queryRaw<ClickGroupRow[]>`
+        SELECT
+          "publisherId",
+          to_char("timestamp" AT TIME ZONE ${APP_TIMEZONE}, 'YYYY-MM-DD') AS day,
+          COUNT(*)::bigint AS total,
+          COUNT(*) FILTER (WHERE "isValid" = true)::bigint AS valid
+        FROM "Click"
+        WHERE ${Prisma.join(clickConds, ' AND ')}
+        GROUP BY 1, 2
+      `,
+      prisma.$queryRaw<ConvGroupRow[]>`
+        SELECT
+          "publisherId",
+          to_char("createdAt" AT TIME ZONE ${APP_TIMEZONE}, 'YYYY-MM-DD') AS day,
+          COUNT(*)::bigint AS count,
+          COALESCE(SUM("amount"), 0)::text AS earnings
+        FROM "Conversion"
+        WHERE ${Prisma.join(convConds, ' AND ')}
+        GROUP BY 1, 2
+      `,
       prisma.dailySettlement.findMany({
         where: { accountType: 'PUBLISHER' },
         select: { accountId: true, settlementDate: true, status: true },
       }),
     ])
 
-    const impMap = new Map<string, { total: number; valid: number }>()
-    for (const c of clicks) {
-      const date = dateIn(c.timestamp)
-      const key = `${c.publisherId}|${date}`
-      const cur = impMap.get(key) ?? { total: 0, valid: 0 }
-      cur.total += 1
-      if (c.isValid) cur.valid += 1
-      impMap.set(key, cur)
-    }
-
-    const convMap = new Map<string, { count: number; micros: bigint }>()
-    for (const c of conversions) {
-      const date = dateIn(c.createdAt)
-      const key = `${c.publisherId}|${date}`
-      const cur = convMap.get(key) ?? { count: 0, micros: 0n }
-      cur.count += 1
-      cur.micros += toMicros(c.amount)
-      convMap.set(key, cur)
-    }
-
+    const impMap = new Map(
+      clickGroups.map((r) => [
+        `${r.publisherId}|${r.day}`,
+        { total: Number(r.total), valid: Number(r.valid) },
+      ])
+    )
+    const convMap = new Map(
+      convGroups.map((r) => [
+        `${r.publisherId}|${r.day}`,
+        { count: Number(r.count), earnings: Number(r.earnings ?? 0) },
+      ])
+    )
     const settlementMap = new Map(
       settlements.map((s) => [`${s.accountId}|${s.settlementDate}`, s.status])
     )
@@ -91,7 +108,7 @@ export async function GET(request: NextRequest) {
         const imp = impMap.get(key)?.total ?? 0
         const validClicks = impMap.get(key)?.valid ?? 0
         const conv = convMap.get(key)?.count ?? 0
-        const actualEarnings = microsToNumber(convMap.get(key)?.micros ?? 0n, 4)
+        const actualEarnings = parseFloat((convMap.get(key)?.earnings ?? 0).toFixed(4))
         const cpmRate = computeCpmRate(imp, conv)
         return {
           publisherId,
@@ -119,7 +136,7 @@ export async function GET(request: NextRequest) {
       data: rows,
     })
   } catch (error) {
-    console.error('[admin/publisher-earnings GET]', error)
+    console.error('[admin/publisher-earnings]', error)
     return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 })
   }
 }

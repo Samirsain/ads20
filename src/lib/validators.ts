@@ -33,12 +33,46 @@ export const trafficUserLoginSchema = z.object({
 
 // ─── Links ────────────────────────────────────────────────────────────────────
 
+const httpUrlSchema = z
+  .string()
+  .trim()
+  .url('Must be a valid URL')
+  .refine((u) => /^https?:\/\//i.test(u), 'URL must start with http:// or https://')
+
 export const createLinkSchema = z.object({
+  name: z.string().trim().min(1, 'Link name is required').max(80, 'Link name must be 80 characters or fewer').optional(),
+  targetUrl: httpUrlSchema.optional(),
   linkType: z.enum(['direct', 'smart']).default('direct'),
 })
 
+export const updatePublisherLinkSchema = z
+  .object({
+    name: z.string().trim().min(1, 'Link name is required').max(80, 'Link name must be 80 characters or fewer').optional(),
+    targetUrl: httpUrlSchema.optional(),
+    linkType: z.enum(['direct', 'smart']).optional(),
+  })
+  .refine((d) => d.name !== undefined || d.targetUrl !== undefined || d.linkType !== undefined, {
+    message: 'Nothing to update',
+  })
+
 export const createTrafficLinkSchema = z.object({
-  targetUrl: z.string().url('Must be a valid URL'),
+  name: z.string().trim().min(1, 'Link name is required').max(80, 'Link name must be 80 characters or fewer').optional(),
+  targetUrl: httpUrlSchema,
+})
+
+export const updateTrafficLinkSchema = z
+  .object({
+    name: z.string().trim().min(1, 'Link name is required').max(80, 'Link name must be 80 characters or fewer').optional(),
+    targetUrl: httpUrlSchema.optional(),
+    isActive: z.boolean().optional(),
+  })
+  .refine((d) => d.name !== undefined || d.targetUrl !== undefined || d.isActive !== undefined, {
+    message: 'Nothing to update',
+  })
+
+export const adminToggleLinkSchema = z.object({
+  type: z.enum(['publisher', 'traffic']),
+  isActive: z.boolean(),
 })
 
 // ─── Withdrawal ───────────────────────────────────────────────────────────────

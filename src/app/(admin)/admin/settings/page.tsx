@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Settings, Save, Loader2, AlertCircle, RefreshCw, Radio } from 'lucide-react'
 
 interface PostbackLogEntry {
@@ -29,35 +29,45 @@ export default function AdminSettingsPage() {
   const [postbackLog, setPostbackLog] = useState<PostbackLogEntry[]>([])
   const [logLoading, setLogLoading] = useState(true)
 
-  const fetchSettings = async () => {
+  const loadSettings = useCallback(async () => {
+    const res = await fetch('/api/admin/config')
+    const data = await res.json()
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || 'Failed to fetch settings')
+    }
+    return data.data as Record<string, string>
+  }, [])
+
+  const fetchSettings = useCallback(async () => {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch('/api/admin/config')
-      const data = await res.json()
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || 'Failed to fetch settings')
-      }
-      setSettings((prev) => ({ ...prev, ...data.data }))
-    } catch (err: any) {
-      setError(err.message || 'Error loading configurations')
+      const next = await loadSettings()
+      setSettings((prev) => ({ ...prev, ...next }))
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Error loading configurations')
     } finally {
       setLoading(false)
     }
-  }
+  }, [loadSettings])
 
-  const fetchPostbackLog = async () => {
+  const loadPostbackLog = useCallback(async () => {
+    const res = await fetch('/api/admin/postback-log')
+    const data = await res.json()
+    if (res.ok && data.success) return (data.data || []) as PostbackLogEntry[]
+    return []
+  }, [])
+
+  const fetchPostbackLog = useCallback(async () => {
     setLogLoading(true)
     try {
-      const res = await fetch('/api/admin/postback-log')
-      const data = await res.json()
-      if (res.ok && data.success) setPostbackLog(data.data || [])
+      setPostbackLog(await loadPostbackLog())
     } catch {
       // Diagnostics only — a failure here should not block the settings page
     } finally {
       setLogLoading(false)
     }
-  }
+  }, [loadPostbackLog])
 
   const saveSetting = async (key: string, value: string) => {
     setSavingKey(key)
@@ -76,25 +86,35 @@ export default function AdminSettingsPage() {
       }
 
       setSuccess(`Setting '${key}' saved successfully!`)
-    } catch (err: any) {
-      setError(err.message || `Error saving ${key}`)
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : `Error saving ${key}`)
     } finally {
       setSavingKey(null)
     }
   }
 
   useEffect(() => {
-    fetchSettings()
-    fetchPostbackLog()
-  }, [])
+    let active = true
+    loadSettings()
+      .then((next) => { if (active) setSettings((prev) => ({ ...prev, ...next })) })
+      .catch((err: unknown) => {
+        if (active) setError(err instanceof Error ? err.message : 'Error loading configurations')
+      })
+      .finally(() => { if (active) setLoading(false) })
+    loadPostbackLog()
+      .then((entries) => { if (active) setPostbackLog(entries) })
+      .catch(() => {})
+      .finally(() => { if (active) setLogLoading(false) })
+    return () => { active = false }
+  }, [loadSettings, loadPostbackLog])
 
   return (
     <div className="space-y-8 max-w-3xl">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
-            <Settings className="h-8 w-8 text-violet-600" />
+          <h1 className="text-3xl font-extrabold text-[#101828] tracking-tight flex items-center gap-2">
+            <Settings className="h-8 w-8 text-[#155EEF]" />
             Global Settings
           </h1>
           <p className="text-slate-500 mt-1">Configure conversion values, routing URLs, and payout rules</p>
@@ -180,6 +200,13 @@ export default function AdminSettingsPage() {
           saving={savingKey === 'min_withdrawal'}
           loading={loading}
           placeholder="15.00"
+          quickAction={{
+            label: 'Set $15.00',
+            onClick: () => {
+              setSettings((s) => ({ ...s, min_withdrawal: '15.00' }))
+              void saveSetting('min_withdrawal', '15.00')
+            },
+          }}
         />
 
         <PostbackLogCard
@@ -205,8 +232,8 @@ function PostbackLogCard({
     <div className="bg-white border border-slate-200 rounded-3xl p-6 space-y-4">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-            <Radio className="h-4 w-4 text-violet-600" />
+          <h3 className="text-base font-bold text-[#101828] flex items-center gap-2">
+            <Radio className="h-4 w-4 text-[#155EEF]" />
             Recent Postback Activity
           </h3>
           <p className="text-slate-500 text-xs mt-1">
@@ -283,6 +310,7 @@ interface SettingCardProps {
   saving: boolean
   loading: boolean
   placeholder: string
+  quickAction?: { label: string; onClick: () => void }
 }
 
 function SettingInputCard({
@@ -294,27 +322,40 @@ function SettingInputCard({
   saving,
   loading,
   placeholder,
+  quickAction,
 }: SettingCardProps) {
   return (
-    <div className="bg-white border border-slate-200 rounded-3xl p-6 space-y-4">
-      <div>
-        <h3 className="text-base font-bold text-slate-900">{title}</h3>
-        <p className="text-slate-500 text-xs mt-1">{description}</p>
+    <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <h3 className="text-base font-bold text-[#101828]">{title}</h3>
+          <p className="text-slate-500 text-xs mt-1">{description}</p>
+        </div>
+        {quickAction && (
+          <button
+            type="button"
+            disabled={loading || saving}
+            onClick={quickAction.onClick}
+            className="px-3 py-1.5 rounded-lg bg-blue-50 border border-blue-200 text-[#155EEF] text-xs font-semibold hover:bg-blue-100 transition disabled:opacity-50"
+          >
+            {quickAction.label}
+          </button>
+        )}
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3">
         <input
           type="text"
           value={loading ? 'Loading...' : value}
           disabled={loading || saving}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className="flex-1 bg-white border border-slate-300 focus:border-violet-500 rounded-xl px-4 py-3 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-violet-500 transition disabled:opacity-50 text-sm font-mono"
+          className="flex-1 bg-white border border-slate-300 focus:border-[#155EEF] rounded-xl px-4 py-3 text-[#101828] placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#155EEF] transition disabled:opacity-50 text-sm font-mono"
         />
         <button
           onClick={onSave}
           disabled={loading || saving}
-          className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white font-semibold rounded-xl px-5 py-3 shadow-lg shadow-violet-600/10 active:scale-95 transition disabled:opacity-50 select-none text-sm shrink-0"
+          className="flex items-center gap-2 bg-gradient-to-r from-[#155EEF] to-[#06B6D4] hover:opacity-95 text-white font-semibold rounded-xl px-5 py-3 shadow-xs active:scale-95 transition disabled:opacity-50 select-none text-sm shrink-0"
         >
           {saving ? (
             <>
